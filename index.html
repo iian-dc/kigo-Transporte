@@ -69,7 +69,7 @@ async function pedirUbicacion(){
     // Solo la primera vez lo manda a plataforma, después sigue rastreando en segundo plano
     if(!primerEnvio){
       primerEnvio=true;
-      setTimeout(()=>{ window.location.href="Plataforma/index.html"; }, 800);
+      setTimeout(()=>{ window.location.href="index.html"; }, 800);
     }
   }, (err)=>{ console.log(err); }, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
