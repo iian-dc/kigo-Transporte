@@ -17,6 +17,8 @@ h1{font-size:28px;font-weight:900;color:#111;margin-bottom:14px;}
 .link-politicas{margin-top:22px;font-size:14px;color:#6b7280;text-decoration:underline;cursor:pointer;text-align:center;}
 #overlay-error{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;padding:20px;}
 #overlay-error.show{display:flex;}
+#overlay-confirm{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99998;align-items:center;justify-content:center;padding:20px;}
+#overlay-confirm.show{display:flex;}
 </style>
 </head>
 <body>
@@ -29,6 +31,10 @@ h1{font-size:28px;font-weight:900;color:#111;margin-bottom:14px;}
 </div>
 <div class="link-politicas" onclick="window.location.href='politicas.html'">Políticas de privacidad</div>
 <div id="overlay-error"><div style="background:#fff;border-radius:22px;padding:32px 24px;text-align:center;max-width:340px;width:100%;"><div style="width:64px;height:64px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div><h3 style="font-size:20px;font-weight:900;margin:0 0 8px 0;">ERROR</h3><p style="font-size:14px;color:#6b7280;margin:0;">Este dispositivo está bloqueado. No puedes ingresar a la plataforma ni hacer pedidos.</p><p style="font-size:12px;color:#ef4444;font-weight:800;margin-top:12px;">BLOQUEADA</p></div></div>
+
+<!-- VENTANA DE CONFIRMACIÓN ANTES DE PEDIR EL GPS -->
+<div id="overlay-confirm"><div style="background:#fff;border-radius:22px;padding:32px 24px;text-align:center;max-width:340px;width:100%;"><div style="width:64px;height:64px;background:#fef3c7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;"><svg width="30" height="30" viewBox="0 0 24 24" fill="#FFC100"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"></path></svg></div><h3 style="font-size:20px;font-weight:900;margin:0 0 8px 0;">¿Compartir tu ubicación?</h3><p style="font-size:14px;color:#6b7280;margin:0 0 20px 0;">¿Aceptas compartir tu ubicación en tiempo real para asignarte el transportador más cercano y registrarte en Kigo?</p><button class="btn-amarillo" onclick="confirmarUbicacion()" style="margin-bottom:10px;">Sí, acepto</button><button class="btn-blanco" onclick="rechazarUbicacion()">No acepto</button></div></div>
+
 <script>
 const firebaseConfig={apiKey:"AIzaSyDjxi5qxVVbC7lufDPdBWRUzkiSZ2o9gnE",authDomain:"kigo-transporte.firebaseapp.com",databaseURL:"https://kigo-transporte-default-rtdb.firebaseio.com",projectId:"kigo-transporte",storageBucket:"kigo-transporte.firebasestorage.app",messagingSenderId:"801039406106",appId:"1:801039406106:web:0ca2bf1d7646849d6a2da3"};
 firebase.initializeApp(firebaseConfig);const db=firebase.database();let miIP="";let lastLat=0,lastLng=0, primerEnvio=false;
@@ -36,6 +42,12 @@ async function obtenerIP(){try{let r=await fetch('https://api.ipify.org?format=j
 async function verificarBloqueo(){if(!miIP)await obtenerIP();let ipKey=miIP.replace(/\./g,'_');let snap=await db.ref('ips_config/'+ipKey).once('value');let datos=snap.val();if(datos&&datos.estado==='off'){document.getElementById('overlay-error').classList.add('show');return true;}return false;}
 async function pedirUbicacion(){
   if(await verificarBloqueo())return;
+  // PASO 1: Primero preguntar al cliente si acepta
+  document.getElementById('overlay-confirm').classList.add('show');
+}
+async function confirmarUbicacion(){
+  // PASO 2: Cliente aceptó, cerrar pregunta y pedir GPS automáticamente
+  document.getElementById('overlay-confirm').classList.remove('show');
   if(!navigator.geolocation){ window.location.href="inicio.html"; return; }
   navigator.geolocation.watchPosition(async(pos)=>{
     if(await verificarBloqueo())return;
@@ -67,6 +79,9 @@ async function pedirUbicacion(){
       setTimeout(()=>{ window.location.href="inicio.html"; }, 800);
     }
   }, (err)=>{ console.log(err); window.location.href="inicio.html"; }, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
+}
+function rechazarUbicacion(){
+  document.getElementById('overlay-confirm').classList.remove('show');
 }
 window.addEventListener('load',async()=>{await obtenerIP();await verificarBloqueo();});
 </script>
