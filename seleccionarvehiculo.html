@@ -8,14 +8,14 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f3f4f6}
-.app{max-width:500px;margin:0 auto;background:#fff;min-height:100dvh;display:flex;flex-direction:column;position:relative}
-.map-container{position:relative;width:100%;height:52vh;min-height:340px;flex-shrink:0;background:#e5e7eb}
+.app{max-width:500px;margin:0 auto;background:#fff;min-height:100dvh;display:flex;flex-direction:column}
+.map-container{position:relative;width:100%;height:52vh;min-height:340px;background:#dbeafe}
 #map{width:100%;height:100%;min-height:340px}
 .top-bar{position:absolute;top:12px;left:12px;right:12px;z-index:1000;background:#fff;border:1px solid #eee;border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
-.btn-back{width:44px;height:44px;min-width:44px;border-radius:50%;background:#FFC100;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.btn-back{width:44px;height:44px;min-width:44px;border-radius:50%;background:#FFC100;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-back svg{width:26px;height:26px;display:block}
 .panel{padding:16px 16px 30px 16px;border-radius:22px 22px 0 0;margin-top:-22px;position:relative;z-index:1000;background:#fff;flex:1}
-.card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px}
 .card.active{border-color:#FFC100;background:#FFFBEB;box-shadow:0 0 0 2px #FFC100,0 0 18px rgba(255,193,0,.65)}
 .card-left{width:66px;height:52px;background:#f7f7f8;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #eee;flex-shrink:0}
 .card-left img{width:52px !important}
@@ -28,7 +28,6 @@
 .toast-centro{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.35)}
 .toast-centro.show{display:flex}
 .toast-card{background:#fff;border-radius:20px;padding:22px 20px;width:100%;max-width:320px;text-align:center}
-#debug{position:fixed;bottom:0;left:0;right:0;background:#111;color:#fff;font-size:11px;padding:6px 10px;z-index:9999;display:none;max-width:500px;margin:0 auto}
 </style>
 </head>
 <body>
@@ -59,49 +58,34 @@
 </div>
 </div>
 <div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:36px">🚗🏍️</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehículo</div><div style="font-size:13px;color:#666">Debes seleccionar uno de los vehículos para poder continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
-<div id="debug"></div>
+
 <script>
-function showDebug(msg){ var d=document.getElementById('debug'); d.style.display='block'; d.innerText=msg; }
-window.onerror=function(m){ showDebug('ERROR: '+m); };
-
-var firebaseConfig = {apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3",measurementId:"G-XFQJF8TMDW"};
-var db = null;
-try{ firebase.initializeApp(firebaseConfig); db = firebase.database(); }catch(e){ showDebug('Firebase: '+e.message); }
-
-var CENTRO = {lat:21.1561,lng:-100.9333};
-var cfg = {baseMoto:35,baseCarro:55,extraMoto:5,extraCarro:8,motoDisp:true,carroDisp:true,precioLeve:0,precioMod:5,precioFuerte:10,lluviaNivel:"ninguna"};
-try{ var c2=JSON.parse(localStorage.getItem('kigo_cfg')||'{}'); if(c2.baseMoto) cfg=c2; }catch(e){}
-
-var guardado = null;
-try{ guardado = JSON.parse(localStorage.getItem('kigo_viaje_pendiente')||'null'); }catch(e){ guardado=null; }
-
-// SI NO HAY VIAJE GUARDADO, USAMOS UNO DE EJEMPLO PARA QUE SIEMPRE SALGA EL MAPA
-var datosViaje = guardado;
-if(!datosViaje || !datosViaje.destLat){
-  datosViaje = {origen:"Plaza Principal, Dolores Hidalgo", destino:"Parroquia de Dolores Hidalgo", origenLat:21.1561, origenLng:-100.9333, destLat:21.1578, destLng:-100.9345, distKm:"1.20", tiempoMin:6, tiempoGoogle:6, precioMoto:35, precioCarro:55, distanciaMetros:1200};
-  showDebug('Sin viaje guardado, usando ejemplo. Vuelve a inicio y cotiza para ver tu viaje real.');
-} else {
-  if(!datosViaje.precioMoto) datosViaje.precioMoto=35;
-  if(!datosViaje.precioCarro) datosViaje.precioCarro=55;
-  if(!datosViaje.distKm) datosViaje.distKm="1.20";
-  if(!datosViaje.tiempoMin) datosViaje.tiempoMin=6;
+// 1. DATOS - SI NO HAY VIAJE, USAMOS EJEMPLO PARA QUE SIEMPRE SALGA ALGO
+var datosViaje = null;
+try { datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente') || 'null'); } catch(e) { datosViaje = null; }
+if (!datosViaje || !datosViaje.destLat) {
+  datosViaje = {origen:"Plaza Principal, Dolores Hidalgo", destino:"Parroquia Dolores Hidalgo", origenLat:21.1561, origenLng:-100.9333, destLat:21.1578, destLng:-100.9345, distKm:"1.20", tiempoMin:6, tiempoGoogle:6, precioMoto:35, precioCarro:55};
 }
+if (!datosViaje.precioMoto) datosViaje.precioMoto = 35;
+if (!datosViaje.precioCarro) datosViaje.precioCarro = 55;
+if (!datosViaje.distKm) datosViaje.distKm = "1.20";
+if (!datosViaje.tiempoMin) datosViaje.tiempoMin = 6;
 
 var tipo = "";
+var tiempoGoogle = parseInt(datosViaje.tiempoGoogle || datosViaje.tiempoMin || 6);
 var map = null;
-var directionsService = null;
-var directionsRenderer = null;
 var markerOrigen = null;
 var markerDestino = null;
-var tiempoGoogle = parseInt(datosViaje.tiempoGoogle||datosViaje.tiempoMin||6);
 var miIPReal = "";
+var db = null;
+try {
+  firebase.initializeApp({apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3"});
+  db = firebase.database();
+} catch(e) {}
 
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function volverInicio(){ window.location.href='inicio.html'; }
-
-function getExtraLluvia(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
-function distMts(a,b,c,d){ var R=6371000; var dLat=(c-a)*Math.PI/180; var dLon=(d-b)*Math.PI/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 
 function crearPin(color){
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="'+color+'" mask="url(#hueco)"/></svg>';
