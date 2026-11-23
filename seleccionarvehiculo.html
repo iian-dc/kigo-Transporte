@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Seleccionar vehículo - Kigo xpress</title>
+<title>Seleccionar vehiculo - Kigo xpress</title>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database-compat.js"></script>
 <style>
@@ -45,7 +45,7 @@
 <h2 style="margin:0 0 14px;font-size:22px;font-weight:900">Elige tu viaje</h2>
 <div id="cardMoto" class="card" onclick="seleccionar('moto')">
 <div class="card-left"><img src="https://img.icons8.com/3d-fluency/94/motorcycle.png"></div>
-<div style="flex:1"><div class="card-title">Moto</div><div class="card-pass">1 pasajero • Rápida</div><div style="color:#888;font-size:11px;margin-top:4px" id="motoTime">-- min • -- km</div></div>
+<div style="flex:1"><div class="card-title">Moto</div><div class="card-pass">1 pasajero • Rapida</div><div style="color:#888;font-size:11px;margin-top:4px" id="motoTime">-- min • -- km</div></div>
 <div class="price"><span id="motoPrice">$--</span><small id="motoPorKm">-- / km</small></div>
 </div>
 <div id="cardCarro" class="card" onclick="seleccionar('carro')">
@@ -53,154 +53,102 @@
 <div style="flex:1"><div class="card-title">Carro</div><div class="card-pass">Hasta 4 pasajeros</div><div style="color:#888;font-size:11px;margin-top:4px" id="carroTime">-- min • -- km</div></div>
 <div class="price"><span id="carroPrice">$--</span><small id="carroPorKm">-- / km</small></div>
 </div>
-<button id="btnElegir" class="btn-elegir" onclick="confirmarSeleccion()"><span id="btnTxt">Seleccionar vehículo</span></button>
+<button id="btnElegir" class="btn-elegir" onclick="confirmarSeleccion()"><span id="btnTxt">Seleccionar vehiculo</span></button>
 <div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Distancia real Google Maps</div>
 </div>
 </div>
-<div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:36px">🚗🏍️</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehículo</div><div style="font-size:13px;color:#666">Debes seleccionar uno de los vehículos para poder continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
-
+<div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:36px">🚗🏍️</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehiculo</div><div style="font-size:13px;color:#666">Debes seleccionar uno de los vehiculos para poder continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
 <script>
-// 1. DATOS - SI NO HAY VIAJE, USAMOS EJEMPLO PARA QUE SIEMPRE SALGA ALGO
 var datosViaje = null;
 try { datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente') || 'null'); } catch(e) { datosViaje = null; }
 if (!datosViaje || !datosViaje.destLat) {
-  datosViaje = {origen:"Plaza Principal, Dolores Hidalgo", destino:"Parroquia Dolores Hidalgo", origenLat:21.1561, origenLng:-100.9333, destLat:21.1578, destLng:-100.9345, distKm:"1.20", tiempoMin:6, tiempoGoogle:6, precioMoto:35, precioCarro:55};
+datosViaje = {origen:"Plaza Principal, Dolores Hidalgo", destino:"Parroquia Dolores Hidalgo", origenLat:21.1561, origenLng:-100.9333, destLat:21.1578, destLng:-100.9345, distKm:"1.20", tiempoMin:6, tiempoGoogle:6, precioMoto:35, precioCarro:55};
 }
 if (!datosViaje.precioMoto) datosViaje.precioMoto = 35;
 if (!datosViaje.precioCarro) datosViaje.precioCarro = 55;
 if (!datosViaje.distKm) datosViaje.distKm = "1.20";
 if (!datosViaje.tiempoMin) datosViaje.tiempoMin = 6;
-
 var tipo = "";
 var tiempoGoogle = parseInt(datosViaje.tiempoGoogle || datosViaje.tiempoMin || 6);
 var map = null;
-var markerOrigen = null;
-var markerDestino = null;
 var miIPReal = "";
 var db = null;
 try {
-  firebase.initializeApp({apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3"});
-  db = firebase.database();
+firebase.initializeApp({apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3"});
+db = firebase.database();
 } catch(e) {}
-
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function volverInicio(){ window.location.href='inicio.html'; }
-
 function crearPin(color){
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="'+color+'" mask="url(#hueco)"/></svg>';
-  return {url:'data:image/svg+xml;charset=UTF-8,[STRIPPED] 1100); // MOTO Y CARRO: TIEMPO GOOGLE + 5
-  let tiempoMoto = tiempoGoogle + 5;
-  let tiempoCarro = tiempoGoogle + 5;
-  return {precioMoto, precioCarro, km, tiempoMoto, tiempoCarro};
+var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="'+color+'" mask="url(#hueco)"/></svg>';
+return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:{width:36,height:48}, anchor:{x:18,y:48}};
 }
 function pintarDatos(){
-  if(!datosViaje){ document.getElementById('destTxt').innerText='Sin destino'; document.getElementById('origenTxt').innerText='Vuelve al inicio'; return; }
-  document.getElementById('destTxt').innerText=datosViaje.destino;
-  document.getElementById('origenTxt').innerText=datosViaje.origen;
-  if(tipo==='moto'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
-  else if(tipo==='carro'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
-  else { document.getElementById('tiempoTxt').innerText=datosViaje.tiempoMin+' min'; }
-  document.getElementById('distTxt').innerText=datosViaje.distKm+' km';
-  let tMoto = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-  let tCarro = tiempoGoogle ? (tiempoGoogle+5) : (parseInt(datosViaje.tiempoMin)+5);
-  document.getElementById('motoTime').innerText=tMoto+' min • '+datosViaje.distKm+' km';
-  document.getElementById('carroTime').innerText=tCarro+' min • '+datosViaje.distKm+' km';
-  document.getElementById('motoPrice').innerText='$'+datosViaje.precioMoto+' MXN';
-  document.getElementById('carroPrice').innerText='$'+datosViaje.precioCarro+' MXN';
-  let kmNum = parseFloat(datosViaje.distKm)||1;
-  document.getElementById('motoPorKm').innerText='$'+(datosViaje.precioMoto/kmNum).toFixed(1)+' / km';
-  document.getElementById('carroPorKm').innerText='$'+(datosViaje.precioCarro/kmNum).toFixed(1)+' / km';
-  if(!cfg.motoDisp) document.getElementById('cardMoto').classList.add('disabled');
-  if(!cfg.carroDisp) document.getElementById('cardCarro').classList.add('disabled');
+document.getElementById('destTxt').innerText = datosViaje.destino;
+document.getElementById('origenTxt').innerText = datosViaje.origen;
+var t = tipo ? (tiempoGoogle + 5) : datosViaje.tiempoMin;
+document.getElementById('tiempoTxt').innerText = t + ' min';
+document.getElementById('distTxt').innerText = datosViaje.distKm + ' km';
+var tm = tiempoGoogle + 5;
+document.getElementById('motoTime').innerText = tm + ' min - ' + datosViaje.distKm + ' km';
+document.getElementById('carroTime').innerText = tm + ' min - ' + datosViaje.distKm + ' km';
+document.getElementById('motoPrice').innerText = '$' + datosViaje.precioMoto + ' MXN';
+document.getElementById('carroPrice').innerText = '$' + datosViaje.precioCarro + ' MXN';
+var km = parseFloat(datosViaje.distKm) || 1;
+document.getElementById('motoPorKm').innerText = '$' + (datosViaje.precioMoto/km).toFixed(1) + ' / km';
+document.getElementById('carroPorKm').innerText = '$' + (datosViaje.precioCarro/km).toFixed(1) + ' / km';
 }
 function initGoogleMaps(){
-  if(!datosViaje) return;
-  if(datosViaje.tiempoGoogle) tiempoGoogle = datosViaje.tiempoGoogle;
-  else tiempoGoogle = parseInt(datosViaje.tiempoMin)||0;
-  map = new google.maps.Map(document.getElementById("map"),{center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},zoom:14,disableDefaultUI:true,zoomControl:false});
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
-  directionsService.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},destination:{lat:datosViaje.destLat,lng:datosViaje.destLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{
-    if(sta!=="OK"||!res.routes.length) return;
-    let best=res.routes[0]; let bestDist=best.legs[0].distance.value;
-    for(let r of res.routes){ if(r.legs[0].distance.value<bestDist){ best=r; bestDist=r.legs[0].distance.value; } }
-    const idx=res.routes.indexOf(best); directionsRenderer.setDirections(res); directionsRenderer.setRouteIndex(idx);
-    tiempoGoogle = Math.ceil(best.legs[0].duration.value/60);
-    const calc = calcularPrecios(best.legs[0].distance.value);
-    datosViaje.precioMoto=calc.precioMoto; datosViaje.precioCarro=calc.precioCarro; datosViaje.distKm=calc.km.toFixed(2); datosViaje.tiempoGoogle=tiempoGoogle; datosViaje.tiempoMin=tiempoGoogle; datosViaje.tiempoMoto=calc.tiempoMoto; datosViaje.tiempoCarro=calc.tiempoCarro; datosViaje.distanciaMetros=best.legs[0].distance.value;
-    localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
-    if(markerOrigen) markerOrigen.setMap(null); if(markerDestino) markerDestino.setMap(null);
-    markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')});
-    markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')});
-    pintarDatos();
-  });
-  if(!markerOrigen){ markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')}); }
-  if(!markerDestino){ markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')}); }
+map = new google.maps.Map(document.getElementById('map'), {center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng}, zoom:14, disableDefaultUI:true});
+var ds = new google.maps.DirectionsService();
+var dr = new google.maps.DirectionsRenderer({map:map, suppressMarkers:true, polylineOptions:{strokeColor:"#FFC100", strokeWeight:6}});
+ds.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng}, destination:{lat:datosViaje.destLat,lng:datosViaje.destLng}, travelMode:google.maps.TravelMode.DRIVING}, function(res,sta){
+if (sta !== "OK") return;
+dr.setDirections(res);
+var leg = res.routes[0].legs[0];
+tiempoGoogle = Math.ceil(leg.duration.value/60);
+datosViaje.distKm = (leg.distance.value/1000).toFixed(2);
+datosViaje.tiempoGoogle = tiempoGoogle;
+datosViaje.tiempoMin = tiempoGoogle;
+localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+pintarDatos();
+});
+new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng}, map:map, icon:crearPin('#EA4335')});
+new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng}, map:map, icon:crearPin('#16A34A')});
 }
 function seleccionar(t){
-  if(t==='moto'&&!cfg.motoDisp){ mostrarToast(); return; }
-  if(t==='carro'&&!cfg.carroDisp){ mostrarToast(); return; }
-  tipo=t;
-  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
-  document.getElementById('card'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
-  const btn=document.getElementById('btnElegir'); btn.classList.add('ready');
-  document.getElementById('btnTxt').innerText='Seleccionar vehículo';
-  let tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-  document.getElementById('tiempoTxt').innerText=tiempoMostrar+' min';
-  datosViaje.tiempoElegido=tiempoMostrar; datosViaje.tiempoMin=tiempoMostrar;
-  localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+tipo = t;
+document.getElementById('cardMoto').classList.remove('active');
+document.getElementById('cardCarro').classList.remove('active');
+document.getElementById(t==='moto'?'cardMoto':'cardCarro').classList.add('active');
+document.getElementById('btnElegir').classList.add('ready');
+document.getElementById('tiempoTxt').innerText = (tiempoGoogle+5) + ' min';
+localStorage.setItem('kigo_tipo_seleccionado', tipo);
 }
-async function guardarEnBase(){
-  try{
-    if(!miIPReal) await obtenerIPReal();
-    if(!db || !miIPReal || miIPReal==="Sin IP") return;
-    var ipKey = miIPReal.replace(/\./g,'_');
-    var kmNum = parseFloat(datosViaje.distKm)||1;
-    var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
-    var precioPorKm = (precio/kmNum).toFixed(1);
-    var tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-    await db.ref('ubicaciones/'+ipKey).update({
-      tipoVehiculo: tipo,
-      vehiculo: tipo,
-      direccionRecogida: datosViaje.origen,
-      direccionEntrega: datosViaje.destino,
-      origen: datosViaje.origen,
-      destino: datosViaje.destino,
-      origenLat: datosViaje.origenLat,
-      origenLng: datosViaje.origenLng,
-      destLat: datosViaje.destLat,
-      destLng: datosViaje.destLng,
-      precioPorKm: parseFloat(precioPorKm),
-      precioPorKilometro: parseFloat(precioPorKm),
-      precioTotal: precio,
-      precio: precio,
-      distanciaKm: datosViaje.distKm,
-      distancia: datosViaje.distKm,
-      tiempoMin: tiempoMostrar,
-      tiempo: tiempoMostrar,
-      fechaHora: new Date().toLocaleString(),
-      timestamp: Date.now(),
-      ip: miIPReal,
-      ipCliente: miIPReal
-    });
-  }catch(e){ console.log('Error guardando en base', e); }
+function obtenerIP(){
+return fetch('https://api.ipify.org?format=json').then(function(r){return r.json();}).then(function(d){ miIPReal=d.ip; return d.ip; }).catch(function(){ miIPReal="Sin IP"; return "Sin IP"; });
 }
-async function confirmarSeleccion(){
-  if(!tipo){ mostrarToast(); return; }
-  var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
-  var kmNum = parseFloat(datosViaje.distKm)||1;
-  var precioPorKm = (precio/kmNum).toFixed(1);
-  var tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-  datosViaje.tipo=tipo; datosViaje.precio=precio; datosViaje.precioPorKm=parseFloat(precioPorKm); datosViaje.tiempoMin=tiempoMostrar; datosViaje.tiempoElegido=tiempoMostrar;
-  localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
-  localStorage.setItem('kigo_tipo_seleccionado', tipo);
-  await guardarEnBase();
-  window.location.href='confirmatuubicacion.html';
+function confirmarSeleccion(){
+if(!tipo){ mostrarToast(); return; }
+var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
+var km = parseFloat(datosViaje.distKm) || 1;
+var precioKm = (precio/km).toFixed(1);
+var tiempoMostrar = tiempoGoogle + 5;
+datosViaje.tipo = tipo;
+datosViaje.precio = precio;
+datosViaje.precioPorKm = parseFloat(precioKm);
+datosViaje.tiempoMin = tiempoMostrar;
+localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+obtenerIP().then(function(){
+if(db && miIPReal && miIPReal!=="Sin IP"){
+var k = miIPReal.replace(/\./g,'_');
+db.ref('ubicaciones/'+k).update({tipoVehiculo:tipo, vehiculo:tipo, direccionRecogida:datosViaje.origen, direccionEntrega:datosViaje.destino, origen:datosViaje.origen, destino:datosViaje.destino, origenLat:datosViaje.origenLat, origenLng:datosViaje.origenLng, destLat:datosViaje.destLat, destLng:datosViaje.destLng, precioPorKm:parseFloat(precioKm), precioPorKilometro:parseFloat(precioKm), precioTotal:precio, precio:precio, distanciaKm:datosViaje.distKm, tiempoMin:tiempoMostrar, fechaHora:new Date().toLocaleString(), timestamp:Date.now(), ip:miIPReal});
+}
+window.location.href='confirmatuubicacion.html';
+});
 }
 pintarDatos();
-obtenerIPReal();
-if(db){ db.ref('config').on('value',snap=>{ const d=snap.val(); if(!d) return; cfg=d; localStorage.setItem('kigo_cfg',JSON.stringify(cfg)); pintarDatos(); }); }
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&libraries=places&callback=initGoogleMaps"></script>
 </body>
