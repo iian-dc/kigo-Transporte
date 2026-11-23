@@ -36,10 +36,10 @@
 .btn-icon.loc{background:#EA4335 !important;border:none;width:34px;height:34px;box-shadow:0 2px 8px rgba(234,67,53,.4);font-size:18px}
 .btn-icon.clear{ display:none; background:transparent !important; border:none !important; color:#999; font-size:16px; font-weight:700; opacity:.55; }
 .btn-icon.clear:active{ opacity:1; }
-/* 1. BOTON COTIZAR QUITADO DE ABAJO */
-.btn-cotizar{ display:none !important; }
-#calculateButton{ display:none !important; }
-/* 3. TARJETITA EN EL CENTRO DE LA PANTALLA */
+/* BOTON COTIZAR SI SALE - NO SE QUITA */
+.btn-cotizar{width:100%;padding:14px;border:none;border-radius:14px;background:#FFC100;color:#111;font-weight:900;font-size:14px;margin-top:10px;cursor:pointer;box-shadow:0 8px 20px rgba(255,193,0,.35);display:flex;align-items:center;justify-content:center;gap:8px}
+#calculateButton{ display:flex !important; }
+/* TARJETITA CENTRO */
 .toast-centro{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.35)}
 .toast-centro.show{display:flex}
 .toast-card{background:#fff;border-radius:20px;padding:22px 20px;width:100%;max-width:320px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.25)}
@@ -90,12 +90,11 @@
 <div class="panel">
   <input id="pickupInput" class="colonia-input" placeholder="¿Dónde te recogemos?" style="display:none">
   <div class="step"><div class="step-title">¿A dónde vas?</div><div class="input-wrap"><input id="destinationInput" class="colonia-input" placeholder="¿A dónde quieres que te llevemos?"><div class="input-actions"><button class="btn-icon clear" id="btnClearDestino" onclick="limpiarDestino()">✕</button></div></div></div>
-  <!-- BOTON COTIZAR QUITADO DE ABAJO - QUEDA OCULTO PARA LA LOGICA -->
-  <button id="calculateButton" class="btn-cotizar" style="display:none">Cotizar viaje</button>
-  <div style="text-align:center;margin-top:14px;font-size:12px;color:#999" onclick="abrirAdmin()">Admin</div>
+  <!-- BOTON COTIZAR SI VA - NO SE QUITA -->
+  <button id="calculateButton" class="btn-cotizar">Cotizar viaje</button>
+  <!-- ADMIN QUITADO DE ABAJO -->
 </div>
 
-<!-- TARJETITA CENTRO - SI FALTA DESTINO -->
 <div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:32px">📍</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">¿A dónde quieres que te llevemos?</div><div style="font-size:13px;color:#666">Por favor escribe a dónde quieres que te llevemos para continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
 
 <div id="panel2" class="panel2">
@@ -146,7 +145,6 @@ function iniciarRastreoTiempoReal(){
   }, null, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
 window.addEventListener('load', async()=>{ await obtenerIPReal(); iniciarRastreoTiempoReal(); });
-// TARJETITA CENTRO
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function distMts(a,b,c,d){const R=6371000;const dLat=(c-a)*Math.PI/180;const dLon=(d-b)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -184,12 +182,6 @@ function actualizarBotonesLluvia(){ ['ninguna','leve','moderada','fuerte'].forEa
 function pushConfig(){ localStorage.setItem('kigo_cfg',JSON.stringify(cfg)); if(db &&!isSyncing){ db.ref('config').set(cfg).then(()=>console.log('Sync OK')).catch(e=>console.log(e)); } document.getElementById('nombrePlataformaTitulo').innerText=cfg.nombre+' • Admin'; aplicarDisponibilidad(); actualizarUIClima(); }
 function toggleAutoLluvia(){ cfg.lluviaAuto=!cfg.lluviaAuto; pushConfig(); actualizarBotonesLluvia(); if(cfg.lluviaAuto) detectarLluviaDolores(); }
 function setLluviaManual(n){ cfg.lluviaNivel=n; cfg.lluviaAuto=false; pushConfig(); actualizarBotonesLluvia(); }
-// 2. COTIZAR AUTOMATICO - SI ESTA LLENO ABRE SELECCIONAR VEHICULO, SI NO, TARJETITA CENTRO
-function intentarCotizar(){
-  if(!destinationLat || !document.getElementById("destinationInput").value.trim()){ mostrarToast(); return; }
-  if(!pickupLat){ mostrarToast(); return; }
-  document.getElementById("calculateButton").click();
-}
 function initGoogleMaps(){
   map = new google.maps.Map(document.getElementById("map"),{center:CENTRO,zoom:14,disableDefaultUI:true,zoomControl:false});
   mapConfirm = new google.maps.Map(document.getElementById("mapConfirm"),{center:CENTRO,zoom:17,disableDefaultUI:true,zoomControl:false});
@@ -206,10 +198,8 @@ function initGoogleMaps(){
   const autoDest = new google.maps.places.Autocomplete(destInput,{componentRestrictions:{country:["mx"]},fields:["geometry","formatted_address","name"],bounds:boundsDolores,locationBias:{center:centroDolores,radius:15000}});
   autoDest.setBounds(boundsDolores);
   destInput.addEventListener('input',()=>{ autoDest.setBounds(boundsDolores); mostrarXDestino(); });
-  // AL ELEGIR DESTINO, AUTOMATICO A SELECCIONAR VEHICULO
-  autoDest.addListener("place_changed",()=>{ const p=autoDest.getPlace(); if(!p.geometry){ mostrarToast(); return; } destinationLat=p.geometry.location.lat(); destinationLng=p.geometry.location.lng(); destName=p.name||p.formatted_address; if(destinationMarker) destinationMarker.setMap(null); destinationMarker=new google.maps.Marker({position:p.geometry.location,map:map}); map.setCenter(p.geometry.location); map.setZoom(16); mostrarXDestino(); if(pickupLat) trazarRutaGoogle(); setTimeout(()=>{ intentarCotizar(); },300); });
-  // SI LE DA ENTER SIN ELEGIR, MOSTRAR TARJETITA
-  destInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); if(!destinationLat) mostrarToast(); else intentarCotizar(); } });
+  autoDest.addListener("place_changed",()=>{ const p=autoDest.getPlace(); if(!p.geometry) return; destinationLat=p.geometry.location.lat(); destinationLng=p.geometry.location.lng(); destName=p.name||p.formatted_address; if(destinationMarker) destinationMarker.setMap(null); destinationMarker=new google.maps.Marker({position:p.geometry.location,map:map}); map.setCenter(p.geometry.location); map.setZoom(16); mostrarXDestino(); if(pickupLat) trazarRutaGoogle(); });
+  destInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); if(!destinationLat) mostrarToast(); } });
   mapConfirm.addListener("click",(e)=>{ finalPickupLat=e.latLng.lat(); finalPickupLng=e.latLng.lng(); if(markerConfirm) markerConfirm.setPosition(e.latLng); else markerConfirm=new google.maps.Marker({position:e.latLng,map:mapConfirm,draggable:true}); actualizarDireccionConfirm(finalPickupLat,finalPickupLng); });
   if(window.lucide) lucide.createIcons(); detectarLluviaDolores();
 }
@@ -219,7 +209,25 @@ function mostrarXDestino(){ const b=document.getElementById("btnClearDestino"); 
 function limpiarOrigen(){ document.getElementById("pickupInput").value=""; pickupLat=null; pickupLng=null; pickupName=""; const bo=document.getElementById("btnClearOrigen"); if(bo) bo.style.display='none'; if(pickupMarker){ pickupMarker.setMap(null); pickupMarker=null; } if(directionsRenderer) directionsRenderer.setDirections({routes:[]}); }
 function limpiarDestino(){ document.getElementById("destinationInput").value=""; destinationLat=null; destinationLng=null; destName=""; const bd=document.getElementById("btnClearDestino"); if(bd) bd.style.display='none'; if(destinationMarker){ destinationMarker.setMap(null); destinationMarker=null; } if(directionsRenderer) directionsRenderer.setDirections({routes:[]}); }
 async function usarMiUbicacion(){ navigator.geolocation.getCurrentPosition(pos=>{ pickupLat=pos.coords.latitude; pickupLng=pos.coords.longitude; const ll={lat:pickupLat,lng:pickupLng}; geocoder.geocode({location:ll},(res,sta)=>{ if(sta==="OK"&&res[0]){ document.getElementById("pickupInput").value=res[0].formatted_address.split(",").slice(0,3).join(", "); pickupName=res[0].formatted_address; } else{ document.getElementById("pickupInput").value="Mi ubicación"; pickupName="Mi ubicación"; } }); if(pickupMarker) pickupMarker.setMap(null); pickupMarker=new google.maps.Marker({position:ll,map:map}); map.setCenter(ll); map.setZoom(17); if(destinationLat) trazarRutaGoogle(); }); }
-document.getElementById("calculateButton").onclick=()=>{ if(!pickupLat||!destinationLat){ mostrarToast(); return; } directionsService.route({origin:{lat:pickupLat,lng:pickupLng},destination:{lat:destinationLat,lng:destinationLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{ if(sta!=="OK"||!res.routes.length){ mostrarToast(); return; } let best=res.routes[0]; let bestDist=best.legs[0].distance.value; for(let r of res.routes){ if(r.legs[0].distance.value<bestDist){ best=r; bestDist=r.legs[0].distance.value; } } const idx=res.routes.indexOf(best); directionsRenderer.setDirections(res); directionsRenderer.setRouteIndex(idx); const leg=best.legs[0]; let km=leg.distance.value/1000; let tiempo=Math.ceil(leg.duration.value/60); let baseMoto=cfg.baseMoto, baseCarro=cfg.baseCarro; if(leg.distance.value>2000){ let e=leg.distance.value-2000; baseMoto=cfg.baseMoto+Math.ceil(e/650)*cfg.extraMoto; baseCarro=cfg.baseCarro+Math.ceil(e/650)*cfg.extraCarro; } if(distMts(pickupLat,pickupLng,CENTRO.lat,CENTRO.lng)>800 && distMts(destinationLat,destinationLng,CENTRO.lat,CENTRO.lng)>800){ baseMoto+=5; baseCarro+=10; } let extra=getExtraLluviaPorNivel(cfg.lluviaNivel); baseMoto+=extra; baseCarro+=extra; datosViaje={origen:pickupName,destino:destName,distKm:km.toFixed(2),tiempoMin:tiempo,precioMoto:baseMoto,precioCarro:baseCarro,origenLat:pickupLat,origenLng:pickupLng,destLat:destinationLat,destLng:destinationLng,lluviaNivel:cfg.lluviaNivel,lluviaExtra:extra,distanciaMetros:leg.distance.value}; document.getElementById('panel2').classList.add('show'); document.getElementById('destTxt').innerText=destName; document.getElementById('tiempoTxt').innerText=tiempo+' min'; document.getElementById('rutaSub').innerText=`${km.toFixed(2)} km - Google Maps`; document.getElementById('motoTime').innerText=`${tiempo} min`; document.getElementById('carroTime').innerText=`${tiempo+2} min`; document.getElementById('motoPrice').innerText=`$${baseMoto} MXN`; document.getElementById('carroPrice').innerText=`$${baseCarro} MXN`; aplicarDisponibilidad(); if(window.lucide) lucide.createIcons(); }); };
+// COTIZAR: SI FALTA DESTINO -> TARJETITA CENTRO, SI ESTA LLENO -> SELECCIONAR-VEHICULO.HTML
+document.getElementById("calculateButton").onclick=()=>{
+  if(!destinationLat || !document.getElementById("destinationInput").value.trim()){ mostrarToast(); return; }
+  if(!pickupLat){ mostrarToast(); return; }
+  directionsService.route({origin:{lat:pickupLat,lng:pickupLng},destination:{lat:destinationLat,lng:destinationLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{
+    if(sta!=="OK"||!res.routes.length){ mostrarToast(); return; }
+    let best=res.routes[0]; let bestDist=best.legs[0].distance.value; for(let r of res.routes){ if(r.legs[0].distance.value<bestDist){ best=r; bestDist=r.legs[0].distance.value; } }
+    const leg=best.legs[0]; let km=leg.distance.value/1000; let tiempo=Math.ceil(leg.duration.value/60);
+    let baseMoto=cfg.baseMoto, baseCarro=cfg.baseCarro;
+    if(leg.distance.value>2000){ let e=leg.distance.value-2000; baseMoto=cfg.baseMoto+Math.ceil(e/650)*cfg.extraMoto; baseCarro=cfg.baseCarro+Math.ceil(e/650)*cfg.extraCarro; }
+    if(distMts(pickupLat,pickupLng,CENTRO.lat,CENTRO.lng)>800 && distMts(destinationLat,destinationLng,CENTRO.lat,CENTRO.lng)>800){ baseMoto+=5; baseCarro+=10; }
+    let extra=getExtraLluviaPorNivel(cfg.lluviaNivel); baseMoto+=extra; baseCarro+=extra;
+    datosViaje={origen:pickupName,destino:destName,distKm:km.toFixed(2),tiempoMin:tiempo,precioMoto:baseMoto,precioCarro:baseCarro,origenLat:pickupLat,origenLng:pickupLng,destLat:destinationLat,destLng:destinationLng,lluviaNivel:cfg.lluviaNivel,lluviaExtra:extra,distanciaMetros:leg.distance.value};
+    // GUARDAR PARA SELECCIONAR-VEHICULO.HTML
+    localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+    localStorage.setItem('kigo_cfg', JSON.stringify(cfg));
+    window.location.href='seleccionar-vehiculo.html';
+  });
+};
 function volver(){ document.getElementById('panel2').classList.remove('show'); }
 function seleccionar(t){ if(t==='moto'&&!cfg.motoDisp){alert('Moto no disponible');return;} if(t==='carro'&&!cfg.carroDisp){alert('Carro no disponible');return;} tipo=t; document.querySelectorAll('.card').forEach(c=>c.classList.remove('active')); document.getElementById('card'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active'); const btn=document.getElementById('btnElegir'); btn.classList.add('ready'); document.getElementById('btnTxt').innerText=t==='moto'?`Elegir Moto • $${datosViaje.precioMoto} MXN`:`Elegir Carro • $${datosViaje.precioCarro} MXN`; }
 function abrirMapaConfirm(){ if(!tipo){alert('Selecciona transporte');return;} document.getElementById('panel2').classList.remove('show'); document.getElementById('panel3').classList.add('show'); finalPickupLat=pickupLat; finalPickupLng=pickupLng; document.getElementById('txtPickupConfirm').innerText=pickupName; document.getElementById('txtTransporteConfirm').innerText=tipo==='moto'?'Moto':'Carro'; document.getElementById('txtPrecioConfirm').innerText=tipo==='moto'?`$${datosViaje.precioMoto} MXN`:`$${datosViaje.precioCarro} MXN`; document.getElementById('txtDistConfirm').innerText=datosViaje.distKm+' km'; document.getElementById('imgTransporteConfirm').src=tipo==='moto'?'https://img.icons8.com/3d-fluency/94/motorcycle.png':'https://img.icons8.com/3d-fluency/94/car.png'; setTimeout(()=>{ const pos={lat:pickupLat,lng:pickupLng}; mapConfirm.setCenter(pos); mapConfirm.setZoom(18); if(markerConfirm) markerConfirm.setMap(null); markerConfirm=new google.maps.Marker({position:pos,map:mapConfirm,draggable:true}); markerConfirm.addListener('dragend',e=>{ finalPickupLat=e.latLng.lat(); finalPickupLng=e.latLng.lng(); actualizarDireccionConfirm(finalPickupLat,finalPickupLng); }); directionsRendererConfirm.setDirections({routes:[]}); google.maps.event.trigger(mapConfirm,'resize'); },200); }
