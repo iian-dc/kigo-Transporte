@@ -12,12 +12,11 @@
 .map-container{position:relative;width:100%;height:52vh;min-height:340px;flex-shrink:0}
 #map{width:100%;height:100%}
 .top-bar{position:absolute;top:12px;left:12px;right:12px;z-index:1000;background:#fff;border:1px solid #eee;border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
-/* 4. FLECHA - CIRCULO AMARILLO, FLECHA NEGRA GRUESA CENTRADA */
-.btn-back{width:42px;height:42px;min-width:42px;min-height:42px;border-radius:50%;background:#FFC100 !important;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,193,0,.5);padding:0;line-height:1}
-.btn-back span{font-size:22px;font-weight:900;color:#111;line-height:1;display:flex;align-items:center;justify-content:center;transform:translateY(-1px)}
+/* 5. FLECHA MAS GRUESA, MAS ENTRADA, CENTRADA */
+.btn-back{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%;background:#FFC100 !important;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,193,0,.5);padding:0;line-height:1}
+.btn-back svg{width:26px;height:26px;display:block}
 .panel{padding:16px 16px 30px 16px;border-radius:22px 22px 0 0;margin-top:-22px;position:relative;z-index:1000;background:#fff;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-/* 5. SELECCIONADO AMARILLO, NO NARANJA */
 .card.active{border-color:#FFC100 !important;background:#FFFBEB !important;box-shadow:0 0 0 2px #FFC100, 0 0 18px rgba(255,193,0,.65) !important}
 .card.disabled{opacity:.4;pointer-events:none;filter:grayscale(1)}
 .card-left{width:66px;height:52px;background:#f7f7f8;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #eee;flex-shrink:0}
@@ -38,8 +37,10 @@
 <div class="map-container">
 <div id="map"></div>
 <div class="top-bar">
-<button class="btn-back" onclick="volverInicio()"><span>←</span></button>
+<!-- FLECHA GRUESA NEGRA CENTRADA -->
+<button class="btn-back" onclick="volverInicio()"><svg viewBox="0 0 24 24" fill="none"><path d="M20 12H4M4 12L10 6M4 12L10 18" stroke="#111" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div style="flex:1;min-width:0"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="destTxt">Destino</div><div style="font-size:11px;color:#666" id="origenTxt">Origen</div></div>
+<!-- TIEMPO ARRIBA: GOOGLE + 5 SEGUN VEHICULO -->
 <div style="text-align:right"><b id="tiempoTxt" style="font-size:13px">-- min</b><div id="distTxt" style="font-size:11px;color:#666">-- km</div></div>
 </div>
 </div>
@@ -58,7 +59,8 @@
 <div class="price"><span id="carroPrice">$--</span><small id="carroPorKm">-- / km</small></div>
 </div>
 <button id="btnElegir" class="btn-elegir" onclick="confirmarSeleccion()"><span id="btnTxt">Seleccionar vehículo</span></button>
-<div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Precio calculado por distancia real - Google Maps</div>
+<!-- 4. ABAJO DEL BOTON -->
+<div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Distancia real Google Maps</div>
 </div>
 </div>
 
@@ -73,32 +75,33 @@ let datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente')||'null'
 let tipo="";
 let map=null, directionsService=null, directionsRenderer=null;
 let markerOrigen=null, markerDestino=null;
+// TIEMPO BASE REAL DE GOOGLE - SIN SUMAR TODAVIA
+let tiempoGoogle = 0;
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function volverInicio(){ window.location.href='inicio.html'; }
 function getExtraLluviaPorNivel(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
-// 2 y 3. PIN ESTILO GOOGLE CON HUEQUITO TRANSPARENTE EN EL MEDIO
 function crearPin(color){
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="${color}" mask="url(#hueco)"/><circle cx="18" cy="14" r="6" fill="none"/></svg>`;
-  return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(36,48), anchor:new google.maps.Point(18,48)};
-}
-function calcularPrecios(distMetros){
-  let km = distMetros/1000;
-  let precioMoto = cfg.baseMoto, precioCarro = cfg.baseCarro;
-  if(distMetros>2000){ let extraMetros = distMetros-2000; let bloques = Math.ceil(extraMetros/650); precioMoto = cfg.baseMoto + (bloques * cfg.extraMoto); precioCarro = cfg.baseCarro + (bloques * cfg.extraCarro); }
-  function distMts(a,b,c,d){const R=6371000;const dLat=(c-a)*Math.PI/180;const dLon=(d-b)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
-  if(datosViaje && distMts(datosViaje.origenLat,datosViaje.origenLng,CENTRO.lat,CENTRO.lng)>800 && distMts(datosViaje.destLat,datosViaje.destLng,CENTRO.lat,CENTRO.lng)>800){ precioMoto+=5; precioCarro+=10; }
-  let extraLluvia = getExtraLluviaPorNivel(cfg.lluviaNivel); precioMoto+=extraLluvia; precioCarro+=extraLluvia;
-  return {precioMoto, precioCarro, km};
+  return {url:'data:image/svg+xml;charset=UTF-8,[STRIPPED] 1100); // MOTO Y CARRO: TIEMPO GOOGLE + 5
+  let tiempoMoto = tiempoGoogle + 5;
+  let tiempoCarro = tiempoGoogle + 5;
+  return {precioMoto, precioCarro, km, tiempoMoto, tiempoCarro};
 }
 function pintarDatos(){
   if(!datosViaje){ document.getElementById('destTxt').innerText='Sin destino'; document.getElementById('origenTxt').innerText='Vuelve al inicio'; return; }
   document.getElementById('destTxt').innerText=datosViaje.destino;
   document.getElementById('origenTxt').innerText=datosViaje.origen;
-  document.getElementById('tiempoTxt').innerText=datosViaje.tiempoMin+' min';
+  // ARRIBA: SI NO HA ELEGIDO, MUESTRA TIEMPO GOOGLE. SI ELIGIO, MUESTRA GOOGLE+5 DEL VEHICULO
+  if(tipo==='moto'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
+  else if(tipo==='carro'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
+  else { document.getElementById('tiempoTxt').innerText=datosViaje.tiempoMin+' min'; }
   document.getElementById('distTxt').innerText=datosViaje.distKm+' km';
-  document.getElementById('motoTime').innerText=`${datosViaje.tiempoMin} min • ${datosViaje.distKm} km`;
-  document.getElementById('carroTime').innerText=`${parseInt(datosViaje.tiempoMin)+2} min • ${datosViaje.distKm} km`;
+  // TARJETAS: MOTO Y CARRO YA CON +5, SIN DECIR QUE ES +5, SOLO EL TOTAL
+  let tMoto = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  let tCarro = tiempoGoogle ? (tiempoGoogle+5) : (parseInt(datosViaje.tiempoMin)+5);
+  document.getElementById('motoTime').innerText=`${tMoto} min • ${datosViaje.distKm} km`;
+  document.getElementById('carroTime').innerText=`${tCarro} min • ${datosViaje.distKm} km`;
   document.getElementById('motoPrice').innerText=`$${datosViaje.precioMoto} MXN`;
   document.getElementById('carroPrice').innerText=`$${datosViaje.precioCarro} MXN`;
   let kmNum = parseFloat(datosViaje.distKm)||1;
@@ -109,24 +112,29 @@ function pintarDatos(){
 }
 function initGoogleMaps(){
   if(!datosViaje) return;
+  // Guardar tiempo Google original si viene del inicio
+  if(datosViaje.tiempoGoogle) tiempoGoogle = datosViaje.tiempoGoogle;
+  else tiempoGoogle = parseInt(datosViaje.tiempoMin)||0;
   map = new google.maps.Map(document.getElementById("map"),{center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},zoom:14,disableDefaultUI:true,zoomControl:false});
   directionsService = new google.maps.DirectionsService();
-  // 1. SIN A Y SIN B - suppressMarkers true
   directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
   directionsService.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},destination:{lat:datosViaje.destLat,lng:datosViaje.destLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{
     if(sta!=="OK"||!res.routes.length) return;
     let best=res.routes[0]; let bestDist=best.legs[0].distance.value;
     for(let r of res.routes){ if(r.legs[0].distance.value<bestDist){ best=r; bestDist=r.legs[0].distance.value; } }
     const idx=res.routes.indexOf(best); directionsRenderer.setDirections(res); directionsRenderer.setRouteIndex(idx);
+    // TIEMPO REAL GOOGLE
+    tiempoGoogle = Math.ceil(best.legs[0].duration.value/60);
     const calc = calcularPrecios(best.legs[0].distance.value);
-    datosViaje.precioMoto=calc.precioMoto; datosViaje.precioCarro=calc.precioCarro; datosViaje.distKm=calc.km.toFixed(2); datosViaje.tiempoMin=Math.ceil(best.legs[0].duration.value/60); datosViaje.distanciaMetros=best.legs[0].distance.value;
+    datosViaje.precioMoto=calc.precioMoto; datosViaje.precioCarro=calc.precioCarro; datosViaje.distKm=calc.km.toFixed(2); datosViaje.tiempoGoogle=tiempoGoogle; datosViaje.tiempoMin=tiempoGoogle; datosViaje.tiempoMoto=calc.tiempoMoto; datosViaje.tiempoCarro=calc.tiempoCarro; datosViaje.distanciaMetros=best.legs[0].distance.value;
     localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+    if(markerOrigen) markerOrigen.setMap(null); if(markerDestino) markerDestino.setMap(null);
+    markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')});
+    markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')});
     pintarDatos();
   });
-  // 2. RECOGIDA ROJO - 3. ENTREGA VERDE - MISMO ICONO DE GOOGLE CON HUEQUITO
-  if(markerOrigen) markerOrigen.setMap(null); if(markerDestino) markerDestino.setMap(null);
-  markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335'),title:'Recogida'});
-  markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A'),title:'Entrega'});
+  if(!markerOrigen){ markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')}); }
+  if(!markerDestino){ markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')}); }
 }
 function seleccionar(t){
   if(t==='moto'&&!cfg.motoDisp){ mostrarToast(); return; }
@@ -136,14 +144,21 @@ function seleccionar(t){
   document.getElementById('card'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
   const btn=document.getElementById('btnElegir'); btn.classList.add('ready');
   document.getElementById('btnTxt').innerText='Seleccionar vehículo';
+  // ACTUALIZAR TIEMPO DE ARRIBA SEGUN VEHICULO: GOOGLE + 5, SOLO TOTAL
+  let tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  document.getElementById('tiempoTxt').innerText=tiempoMostrar+' min';
+  // Guardar tiempo elegido
+  datosViaje.tiempoElegido=tiempoMostrar; datosViaje.tiempoMin=tiempoMostrar;
+  localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
 }
 function confirmarSeleccion(){
   if(!tipo){ mostrarToast(); return; }
   let precio = tipo==='moto'? datosViaje.precioMoto : datosViaje.precioCarro;
-  datosViaje.tipo=tipo; datosViaje.precio=precio;
+  let tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  datosViaje.tipo=tipo; datosViaje.precio=precio; datosViaje.tiempoMin=tiempoMostrar; datosViaje.tiempoElegido=tiempoMostrar;
   localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
   localStorage.setItem('kigo_tipo_seleccionado', tipo);
-  alert(`✅ ${tipo.toUpperCase()} seleccionado • $${precio} MXN - Ya guardado, seguimos en el siguiente paso`);
+  alert(`✅ ${tipo.toUpperCase()} seleccionado • $${precio} MXN • ${tiempoMostrar} min - Ya guardado, seguimos en el siguiente paso`);
 }
 pintarDatos();
 if(db){ db.ref('config').on('value',snap=>{ const d=snap.val(); if(!d) return; cfg=d; localStorage.setItem('kigo_cfg',JSON.stringify(cfg)); pintarDatos(); }); }
