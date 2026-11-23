@@ -12,10 +12,10 @@
 .map-container{position:relative;width:100%;height:52vh;min-height:340px;flex-shrink:0}
 #map{width:100%;height:100%}
 .top-bar{position:absolute;top:12px;left:12px;right:12px;z-index:1000;background:#fff;border:1px solid #eee;border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
-.btn-back{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%;background:#FFC100;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,193,0,.5);padding:0;line-height:1}
+.btn-back{width:44px;height:44px;min-width:44px;min-height:44px;border-radius:50%;background:#FFC100;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,193,0,.5);padding:0}
 .btn-back svg{width:26px;height:26px;display:block}
 .panel{padding:16px 16px 30px 16px;border-radius:22px 22px 0 0;margin-top:-22px;position:relative;z-index:1000;background:#fff;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card.active{border-color:#FFC100;background:#FFFBEB;box-shadow:0 0 0 2px #FFC100,0 0 18px rgba(255,193,0,.65)}
 .card.disabled{opacity:.4;pointer-events:none;filter:grayscale(1)}
 .card-left{width:66px;height:52px;background:#f7f7f8;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #eee;flex-shrink:0}
@@ -58,27 +58,29 @@
 <div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Distancia real Google Maps</div>
 </div>
 </div>
-<!-- TARJETITA CENTRO - SI NO SELECCIONO VEHICULO -->
 <div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:36px">🚗🏍️</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehículo</div><div style="font-size:13px;color:#666">Debes seleccionar uno de los vehículos para poder continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
 <script>
 var firebaseConfig = {apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3",measurementId:"G-XFQJF8TMDW"};
-var db=null; try{ firebase.initializeApp(firebaseConfig); db=firebase.database(); }catch(e){}
-var CENTRO={lat:21.1561,lng:-100.9333};
-var cfg = JSON.parse(localStorage.getItem('kigo_cfg')||'{"nombre":"Kigo Xpress","baseMoto":35,"baseCarro":55,"extraMoto":5,"extraCarro":8,"motoDisp":true,"carroDisp":true,"precioLeve":0,"precioMod":5,"precioFuerte":10,"lluviaNivel":"ninguna","lluviaAuto":true}');
-var datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente')||'null');
-var tipo="";
-var map=null, directionsService=null, directionsRenderer=null;
-var markerOrigen=null, markerDestino=null;
-var tiempoGoogle=0;
-var miIPReal="";
+var db = null;
+try{ firebase.initializeApp(firebaseConfig); db = firebase.database(); }catch(e){}
+var CENTRO = {lat:21.1561,lng:-100.9333};
+var cfg = JSON.parse(localStorage.getItem('kigo_cfg') || '{"baseMoto":35,"baseCarro":55,"extraMoto":5,"extraCarro":8,"motoDisp":true,"carroDisp":true,"precioLeve":0,"precioMod":5,"precioFuerte":10,"lluviaNivel":"ninguna"}');
+var datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente') || 'null');
+var tipo = "";
+var map = null;
+var directionsService = null;
+var directionsRenderer = null;
+var markerOrigen = null;
+var markerDestino = null;
+var tiempoGoogle = 0;
+var miIPReal = "";
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
-function volverInicio(){ window.location.href='inicio.html'; }
-async function obtenerIPReal(){ try{ var r=await fetch('https://api.ipify.org?format=json'); var d=await r.json(); miIPReal=d.ip; return d.ip; }catch(e){ miIPReal="Sin IP"; return "Sin IP"; } }
-function getExtraLluviaPorNivel(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
+function volverInicio(){ window.location.href = 'inicio.html'; }
+function getExtraLluvia(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
 function distMts(a,b,c,d){ var R=6371000; var dLat=(c-a)*Math.PI/180; var dLon=(d-b)*Math.PI/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 function crearPin(color){
-  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="'+color+'" mask="url(#hueco)"/></svg>';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="' + color + '" mask="url(#hueco)"/></svg>';
   return {url:'data:image/svg+xml;charset=UTF-8,[STRIPPED] 1100); // MOTO Y CARRO: TIEMPO GOOGLE + 5
   let tiempoMoto = tiempoGoogle + 5;
   let tiempoCarro = tiempoGoogle + 5;
@@ -141,7 +143,6 @@ function seleccionar(t){
   datosViaje.tiempoElegido=tiempoMostrar; datosViaje.tiempoMin=tiempoMostrar;
   localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
 }
-// 1. GUARDAR EN LA MISMA INFO DEL CLIENTE EN REALTIME DATABASE
 async function guardarEnBase(){
   try{
     if(!miIPReal) await obtenerIPReal();
@@ -177,7 +178,6 @@ async function guardarEnBase(){
     });
   }catch(e){ console.log('Error guardando en base', e); }
 }
-// 2. BOTON SELECCIONAR VEHICULO
 async function confirmarSeleccion(){
   if(!tipo){ mostrarToast(); return; }
   var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
@@ -188,7 +188,6 @@ async function confirmarSeleccion(){
   localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
   localStorage.setItem('kigo_tipo_seleccionado', tipo);
   await guardarEnBase();
-  // SI YA SELECCIONO -> CONFIRMA TU UBICACION
   window.location.href='confirmatuubicacion.html';
 }
 pintarDatos();
