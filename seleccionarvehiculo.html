@@ -11,12 +11,14 @@
 .app{max-width:500px;margin:0 auto;background:#fff;height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .map-container{position:relative;width:100%;height:52vh;min-height:340px;flex-shrink:0}
 #map{width:100%;height:100%}
-/* BARRA ARRIBA DEL MAPA - DESTINO + FLECHA PARA REGRESAR */
 .top-bar{position:absolute;top:12px;left:12px;right:12px;z-index:1000;background:#fff;border:1px solid #eee;border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
-.btn-back{width:38px;height:38px;border-radius:50%;background:#f1f1f1;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0}
+/* 4. FLECHA - CIRCULO AMARILLO, FLECHA NEGRA GRUESA CENTRADA */
+.btn-back{width:42px;height:42px;min-width:42px;min-height:42px;border-radius:50%;background:#FFC100 !important;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 2px 8px rgba(255,193,0,.5);padding:0;line-height:1}
+.btn-back span{font-size:22px;font-weight:900;color:#111;line-height:1;display:flex;align-items:center;justify-content:center;transform:translateY(-1px)}
 .panel{padding:16px 16px 30px 16px;border-radius:22px 22px 0 0;margin-top:-22px;position:relative;z-index:1000;background:#fff;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .card{border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;background:#fff;border:1.5px solid #eee;cursor:pointer;margin-bottom:10px;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
-.card.active{border-color:#FFC100;background:#FFFBEB;box-shadow:0 0 0 2px rgba(255,193,0,.18),0 0 18px rgba(255,193,0,.25)}
+/* 5. SELECCIONADO AMARILLO, NO NARANJA */
+.card.active{border-color:#FFC100 !important;background:#FFFBEB !important;box-shadow:0 0 0 2px #FFC100, 0 0 18px rgba(255,193,0,.65) !important}
 .card.disabled{opacity:.4;pointer-events:none;filter:grayscale(1)}
 .card-left{width:66px;height:52px;background:#f7f7f8;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid #eee;flex-shrink:0}
 .card-left img{width:52px !important}
@@ -24,7 +26,6 @@
 .card-pass{color:#666;font-size:11px;margin-top:2px}
 .price{font-size:18px;font-weight:900;color:#111;margin-left:auto;text-align:right}
 .price small{display:block;font-size:10px;color:#888;font-weight:600}
-/* BOTON ABAJO - SOLO DICE SELECCIONAR VEHICULO, SIN PRECIO */
 .btn-elegir{margin-top:16px;width:100%;height:62px;border-radius:16px;border:none;background:#eee;color:#999;font-weight:900;font-size:15px}
 .btn-elegir.ready{background:#FFC100;color:#111;box-shadow:0 8px 22px rgba(255,193,0,.45)}
 .toast-centro{position:fixed;inset:0;z-index:9000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.35)}
@@ -36,34 +37,26 @@
 <div class="app">
 <div class="map-container">
 <div id="map"></div>
-<!-- ARRIBA DEL MAPA - A DONDE SE DIRIGE + FLECHA PARA REGRESAR -->
 <div class="top-bar">
-<button class="btn-back" onclick="volverInicio()">←</button>
+<button class="btn-back" onclick="volverInicio()"><span>←</span></button>
 <div style="flex:1;min-width:0"><div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="destTxt">Destino</div><div style="font-size:11px;color:#666" id="origenTxt">Origen</div></div>
 <div style="text-align:right"><b id="tiempoTxt" style="font-size:13px">-- min</b><div id="distTxt" style="font-size:11px;color:#666">-- km</div></div>
 </div>
-<!-- CLIMA QUITADO - YA NO SALE NUBLADO NI GRADOS -->
 </div>
 
 <div class="panel">
 <div style="width:40px;height:4px;background:#e5e7eb;border-radius:999px;margin:0 auto 12px"></div>
 <h2 style="margin:0 0 14px;font-size:22px;font-weight:900">Elige tu viaje</h2>
-<!-- QUITADO: 1.03 KM - 6 MIN -->
-<!-- QUITADO: RECOGIDA Y ENTREGA -->
-
-<!-- SOLO MOTO Y CARRO -->
 <div id="cardMoto" class="card" onclick="seleccionar('moto')">
 <div class="card-left"><img src="https://img.icons8.com/3d-fluency/94/motorcycle.png"></div>
 <div style="flex:1"><div class="card-title">Moto</div><div class="card-pass">1 pasajero • Rápida</div><div style="color:#888;font-size:11px;margin-top:4px" id="motoTime">-- min • -- km</div></div>
 <div class="price"><span id="motoPrice">$--</span><small id="motoPorKm">-- / km</small></div>
 </div>
-
 <div id="cardCarro" class="card" onclick="seleccionar('carro')">
 <div class="card-left"><img src="https://img.icons8.com/3d-fluency/94/car.png"></div>
 <div style="flex:1"><div class="card-title">Carro</div><div class="card-pass">Hasta 4 pasajeros</div><div style="color:#888;font-size:11px;margin-top:4px" id="carroTime">-- min • -- km</div></div>
 <div class="price"><span id="carroPrice">$--</span><small id="carroPorKm">-- / km</small></div>
 </div>
-
 <button id="btnElegir" class="btn-elegir" onclick="confirmarSeleccion()"><span id="btnTxt">Seleccionar vehículo</span></button>
 <div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Precio calculado por distancia real - Google Maps</div>
 </div>
@@ -79,23 +72,23 @@ let cfg = JSON.parse(localStorage.getItem('kigo_cfg')||'{"nombre":"Kigo Xpress",
 let datosViaje = JSON.parse(localStorage.getItem('kigo_viaje_pendiente')||'null');
 let tipo="";
 let map=null, directionsService=null, directionsRenderer=null;
+let markerOrigen=null, markerDestino=null;
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function volverInicio(){ window.location.href='inicio.html'; }
 function getExtraLluviaPorNivel(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
+// 2 y 3. PIN ESTILO GOOGLE CON HUEQUITO TRANSPARENTE EN EL MEDIO
+function crearPin(color){
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="${color}" mask="url(#hueco)"/><circle cx="18" cy="14" r="6" fill="none"/></svg>`;
+  return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg), scaledSize:new google.maps.Size(36,48), anchor:new google.maps.Point(18,48)};
+}
 function calcularPrecios(distMetros){
   let km = distMetros/1000;
   let precioMoto = cfg.baseMoto, precioCarro = cfg.baseCarro;
-  if(distMetros>2000){
-    let extraMetros = distMetros-2000;
-    let bloques = Math.ceil(extraMetros/650);
-    precioMoto = cfg.baseMoto + (bloques * cfg.extraMoto);
-    precioCarro = cfg.baseCarro + (bloques * cfg.extraCarro);
-  }
+  if(distMetros>2000){ let extraMetros = distMetros-2000; let bloques = Math.ceil(extraMetros/650); precioMoto = cfg.baseMoto + (bloques * cfg.extraMoto); precioCarro = cfg.baseCarro + (bloques * cfg.extraCarro); }
   function distMts(a,b,c,d){const R=6371000;const dLat=(c-a)*Math.PI/180;const dLon=(d-b)*Math.PI/180;const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
   if(datosViaje && distMts(datosViaje.origenLat,datosViaje.origenLng,CENTRO.lat,CENTRO.lng)>800 && distMts(datosViaje.destLat,datosViaje.destLng,CENTRO.lat,CENTRO.lng)>800){ precioMoto+=5; precioCarro+=10; }
-  let extraLluvia = getExtraLluviaPorNivel(cfg.lluviaNivel);
-  precioMoto+=extraLluvia; precioCarro+=extraLluvia;
+  let extraLluvia = getExtraLluviaPorNivel(cfg.lluviaNivel); precioMoto+=extraLluvia; precioCarro+=extraLluvia;
   return {precioMoto, precioCarro, km};
 }
 function pintarDatos(){
@@ -118,7 +111,8 @@ function initGoogleMaps(){
   if(!datosViaje) return;
   map = new google.maps.Map(document.getElementById("map"),{center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},zoom:14,disableDefaultUI:true,zoomControl:false});
   directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:false,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
+  // 1. SIN A Y SIN B - suppressMarkers true
+  directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
   directionsService.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},destination:{lat:datosViaje.destLat,lng:datosViaje.destLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{
     if(sta!=="OK"||!res.routes.length) return;
     let best=res.routes[0]; let bestDist=best.legs[0].distance.value;
@@ -129,6 +123,10 @@ function initGoogleMaps(){
     localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
     pintarDatos();
   });
+  // 2. RECOGIDA ROJO - 3. ENTREGA VERDE - MISMO ICONO DE GOOGLE CON HUEQUITO
+  if(markerOrigen) markerOrigen.setMap(null); if(markerDestino) markerDestino.setMap(null);
+  markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335'),title:'Recogida'});
+  markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A'),title:'Entrega'});
 }
 function seleccionar(t){
   if(t==='moto'&&!cfg.motoDisp){ mostrarToast(); return; }
@@ -137,7 +135,6 @@ function seleccionar(t){
   document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
   document.getElementById('card'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
   const btn=document.getElementById('btnElegir'); btn.classList.add('ready');
-  // BOTON SIEMPRE DICE SELECCIONAR VEHICULO, SIN PRECIO
   document.getElementById('btnTxt').innerText='Seleccionar vehículo';
 }
 function confirmarSeleccion(){
