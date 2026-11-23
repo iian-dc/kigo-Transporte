@@ -10,7 +10,6 @@
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#f3f4f6;overflow:hidden}
 .app{max-width:500px;margin:0 auto;background:#fff;height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative}
-/* 1. MAPA MAS GRANDE - PARTE BLANCA MAS ABAJO */
 .map-container{position:relative;width:100%;height:65vh;min-height:440px;flex-shrink:0;margin-top:0}
 #map{width:100%;height:100%}
 #mapConfirm{width:100%;height:100%}
@@ -22,7 +21,6 @@
 .weather-widget.nublado #weatherTemp{ font-size:13px !important; }
 .weather-widget.nublado #weatherDesc{ font-size:9px !important; }
 .weather-widget.nublado #weatherIcon{ font-size:16px !important; }
-/* PANEL DE ABAJO MAS ABAJO */
 .panel{padding:14px 14px 30px 14px;border-radius:22px 22px 0 0;margin-top:-14px;position:relative;z-index:1000;background:#fff;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .panel2{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:500px;width:100%;background:#ffffff;border-radius:28px 28px 0 0;z-index:3000;padding:16px 16px 30px 16px;display:none;flex-direction:column;max-height:78vh;overflow-y:auto;box-shadow:0 -10px 30px rgba(0,0,0,.15)}
 .panel2.show{display:flex}
@@ -31,12 +29,14 @@
 .step{background:#fff;border:1.5px solid #eee;padding:10px 12px;border-radius:14px;margin-bottom:10px}
 .step-title{font-size:10px;font-weight:800;color:#111;letter-spacing:.3px;margin-bottom:6px;text-transform:uppercase}
 .input-wrap{position:relative;display:flex;align-items:center}
-.colonia-input{width:100%;padding:12px 12px 12px 36px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;font-weight:600;outline:none;background:#f9fafb}
+.colonia-input{width:100%;padding:12px 36px 12px 36px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;font-weight:600;outline:none;background:#f9fafb}
 .colonia-input:focus{border-color:#111;background:#fff}
 .input-actions{position:absolute;right:6px;top:50%;transform:translateY(-50%);display:flex;gap:4px;align-items:center}
 .btn-icon{width:28px;height:28px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-icon.loc{background:#EA4335 !important;border:none;width:34px;height:34px;box-shadow:0 2px 8px rgba(234,67,53,.4);font-size:18px}
-.btn-icon.clear{display:none}
+/* 4. X TRANSPARENTE DEL LADO DERECHO */
+.btn-icon.clear{ display:none; background:transparent !important; border:none !important; color:#999; font-size:16px; font-weight:700; opacity:.55; }
+.btn-icon.clear:active{ opacity:1; }
 .btn-cotizar{width:100%;padding:14px;border:none;border-radius:14px;background:#FFC100;color:#111;font-weight:900;font-size:14px;margin-top:10px;cursor:pointer;box-shadow:0 8px 20px rgba(255,193,0,.35);display:flex;align-items:center;justify-content:center;gap:8px}
 .card{border-radius:16px;padding:12px 12px;display:flex;gap:10px;align-items:center;background:#ffffff;border:1.5px solid #eeeeee;cursor:pointer;margin-bottom:10px;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
 .card.active{border-color:#FFC100;background:#FFFBEB;box-shadow:0 0 0 2px rgba(255,193,0,.18), 0 0 18px rgba(255,193,0,.25)}
@@ -84,8 +84,8 @@
 
 <div class="panel">
   <input id="pickupInput" class="colonia-input" placeholder="¿Dónde te recogemos?" style="display:none">
-  <!-- 3. ABAJO AHORA DICE ASI - 4. SIN ICONO DE UBICACION A LA DERECHA -->
-  <div class="step"><div class="step-title">¿A dónde quieres que te llevemos?</div><div class="input-wrap"><input id="destinationInput" class="colonia-input" placeholder="¿A dónde quieres que te llevemos?"><div class="input-actions"><button class="btn-icon clear" id="btnClearDestino" onclick="limpiarDestino()">✕</button></div></div></div>
+  <!-- 1. TITULO: ¿A DONDE VAS? - 2. TEXTO DE ABAJO TAL CUAL -->
+  <div class="step"><div class="step-title">¿A dónde vas?</div><div class="input-wrap"><input id="destinationInput" class="colonia-input" placeholder="¿A dónde quieres que te llevemos?"><div class="input-actions"><button class="btn-icon clear" id="btnClearDestino" onclick="limpiarDestino()">✕</button></div></div></div>
   <button id="calculateButton" class="btn-cotizar">Cotizar viaje</button>
   <div style="text-align:center;margin-top:14px;font-size:12px;color:#999" onclick="abrirAdmin()">Admin</div>
 </div>
@@ -112,6 +112,9 @@
 const firebaseConfig = {apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3",measurementId:"G-XFQJF8TMDW"};
 let db=null; try{ firebase.initializeApp(firebaseConfig); db=firebase.database(); }catch(e){}
 const CENTRO={lat:21.1561,lng:-100.9333};
+// 3. ZONA DOLORES HIDALGO - PRIORIDAD EN BUSQUEDA
+const BOUNDS_DOLORES = new google.maps.LatLngBounds(new google.maps.LatLng(21.05,-101.05), new google.maps.LatLng(21.28,-100.82));
+const CENTRO_DOLORES = new google.maps.LatLng(21.1561,-100.9333);
 let pickupLat=null,pickupLng=null,destinationLat=null,destinationLng=null;
 let pickupMarker=null,destinationMarker=null,miMarker=null;
 let map=null,mapConfirm=null,markerConfirm=null;
@@ -133,7 +136,6 @@ function iniciarRastreoTiempoReal(){
     let ipKey = miIPReal.replace(/\./g,'_');
     let datos = {lat:lat,lng:lng,accuracy:pos.coords.accuracy+"m",ip:miIPReal,ipCliente:miIPReal,dispositivo:navigator.userAgent,plataforma:navigator.platform,fechaHora:new Date().toLocaleString(),timestamp:Date.now(),direccionReal:"Tiempo real Plataforma"};
     try{ await db.ref('ubicaciones/'+ipKey).set(datos); }catch(e){}
-    // 2. ICONO ORIGINAL DEL MAPA - SIN CIRCULITO ROJO
     if(map){ let ll={lat:lat,lng:lng}; if(miMarker) miMarker.setPosition(ll); else miMarker=new google.maps.Marker({position:ll,map:map}); }
   }, null, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
 }
@@ -180,12 +182,15 @@ function initGoogleMaps(){
   directionsService = new google.maps.DirectionsService();
   directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
   directionsRendererConfirm = new google.maps.DirectionsRenderer({map:mapConfirm,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
-  // ICONO ORIGINAL DEL MAPA - SIN CIRCULITO
   if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(pos=>{ let ll={lat:pos.coords.latitude,lng:pos.coords.longitude}; map.setCenter(ll); map.setZoom(16); pickupLat=pos.coords.latitude; pickupLng=pos.coords.longitude; geocoder.geocode({location:ll},(res,sta)=>{ if(sta==="OK"&&res[0]){ pickupName=res[0].formatted_address; document.getElementById("pickupInput").value=res[0].formatted_address.split(",").slice(0,3).join(", "); } }); if(miMarker) miMarker.setPosition(ll); else miMarker=new google.maps.Marker({position:ll,map:map}); }); }
   const pickupInput = document.getElementById("pickupInput"); const destInput = document.getElementById("destinationInput");
   const autoPickup = new google.maps.places.Autocomplete(pickupInput,{componentRestrictions:{country:["mx"]},fields:["geometry","formatted_address","name"]});
   autoPickup.addListener("place_changed",()=>{ const p=autoPickup.getPlace(); if(!p.geometry) return; pickupLat=p.geometry.location.lat(); pickupLng=p.geometry.location.lng(); pickupName=p.name||p.formatted_address; if(pickupMarker) pickupMarker.setMap(null); pickupMarker=new google.maps.Marker({position:p.geometry.location,map:map}); map.setCenter(p.geometry.location); map.setZoom(16); if(destinationLat) trazarRutaGoogle(); });
-  const autoDest = new google.maps.places.Autocomplete(destInput,{componentRestrictions:{country:["mx"]},fields:["geometry","formatted_address","name"]});
+  // 3. BUSCADOR CON PRIORIDAD DOLORES HIDALGO
+  const autoDest = new google.maps.places.Autocomplete(destInput,{componentRestrictions:{country:["mx"]},fields:["geometry","formatted_address","name"],bounds:BOUNDS_DOLORES,locationBias:{center:CENTRO_DOLORES,radius:15000},strictBounds:false});
+  autoDest.setBounds(BOUNDS_DOLORES);
+  // Cuando escribe, reforzar que salgan primero los de Dolores
+  destInput.addEventListener('input',()=>{ autoDest.setBounds(BOUNDS_DOLORES); autoDest.setOptions({locationBias:{center:CENTRO_DOLORES,radius:12000}}); mostrarXDestino(); });
   autoDest.addListener("place_changed",()=>{ const p=autoDest.getPlace(); if(!p.geometry) return; destinationLat=p.geometry.location.lat(); destinationLng=p.geometry.location.lng(); destName=p.name||p.formatted_address; if(destinationMarker) destinationMarker.setMap(null); destinationMarker=new google.maps.Marker({position:p.geometry.location,map:map}); map.setCenter(p.geometry.location); map.setZoom(16); mostrarXDestino(); if(pickupLat) trazarRutaGoogle(); });
   mapConfirm.addListener("click",(e)=>{ finalPickupLat=e.latLng.lat(); finalPickupLng=e.latLng.lng(); if(markerConfirm) markerConfirm.setPosition(e.latLng); else markerConfirm=new google.maps.Marker({position:e.latLng,map:mapConfirm,draggable:true}); actualizarDireccionConfirm(finalPickupLat,finalPickupLng); });
   if(window.lucide) lucide.createIcons(); detectarLluviaDolores();
