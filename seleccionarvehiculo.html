@@ -58,7 +58,8 @@
 <div style="text-align:center;margin-top:10px;font-size:11px;color:#999">Distancia real Google Maps</div>
 </div>
 </div>
-<div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:32px">📍</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehículo</div><div style="font-size:13px;color:#666">Por favor elige Moto o Carro para continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
+<!-- TARJETITA CENTRO - SI NO SELECCIONO VEHICULO -->
+<div id="toastCentro" class="toast-centro" onclick="cerrarToast()"><div class="toast-card" onclick="event.stopPropagation()"><div style="font-size:36px">🚗🏍️</div><div style="font-weight:900;font-size:16px;margin:8px 0 4px">Selecciona un vehículo</div><div style="font-size:13px;color:#666">Debes seleccionar uno de los vehículos para poder continuar.</div><button onclick="cerrarToast()" style="margin-top:16px;width:100%;padding:12px;border:none;border-radius:12px;background:#FFC100;font-weight:900">Entendido</button></div></div>
 <script>
 var firebaseConfig = {apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3",measurementId:"G-XFQJF8TMDW"};
 var db=null; try{ firebase.initializeApp(firebaseConfig); db=firebase.database(); }catch(e){}
@@ -69,48 +70,35 @@ var tipo="";
 var map=null, directionsService=null, directionsRenderer=null;
 var markerOrigen=null, markerDestino=null;
 var tiempoGoogle=0;
+var miIPReal="";
 function mostrarToast(){ document.getElementById('toastCentro').classList.add('show'); }
 function cerrarToast(){ document.getElementById('toastCentro').classList.remove('show'); }
 function volverInicio(){ window.location.href='inicio.html'; }
+async function obtenerIPReal(){ try{ var r=await fetch('https://api.ipify.org?format=json'); var d=await r.json(); miIPReal=d.ip; return d.ip; }catch(e){ miIPReal="Sin IP"; return "Sin IP"; } }
 function getExtraLluviaPorNivel(n){ if(n==='leve') return parseInt(cfg.precioLeve)||0; if(n==='moderada') return parseInt(cfg.precioMod)||5; if(n==='fuerte') return parseInt(cfg.precioFuerte)||10; return 0; }
 function distMts(a,b,c,d){ var R=6371000; var dLat=(c-a)*Math.PI/180; var dLon=(d-b)*Math.PI/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
 function crearPin(color){
   var svg='<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48"><defs><mask id="hueco"><rect width="36" height="48" fill="white"/><circle cx="18" cy="14" r="6" fill="black"/></mask></defs><path d="M18 0C8 0 0 7.5 0 14C0 24 18 48 18 48C18 48 36 24 36 14C36 7.5 28 0 18 0Z" fill="'+color+'" mask="url(#hueco)"/></svg>';
-  return {url:'data:image/svg+xml;charset=UTF-8,'+encodeURIComponent(svg),scaledSize:new google.maps.Size(36,48),anchor:new google.maps.Point(18,48)};
-}
-function calcularPrecios(distMetros){
-  var precioMoto=cfg.baseMoto;
-  var precioCarro=cfg.baseCarro;
-  if(distMetros>2000){
-    var bloques=Math.ceil((distMetros-2000)/650);
-    precioMoto=cfg.baseMoto+(bloques*cfg.extraMoto);
-    precioCarro=cfg.baseCarro+(bloques*cfg.extraCarro);
-  }
-  if(datosViaje && distMts(datosViaje.origenLat,datosViaje.origenLng,CENTRO.lat,CENTRO.lng)>800 && distMts(datosViaje.destLat,datosViaje.destLng,CENTRO.lat,CENTRO.lng)>800){ precioMoto+=5; precioCarro+=10; }
-  var extraLluvia=getExtraLluviaPorNivel(cfg.lluviaNivel);
-  precioMoto+=extraLluvia;
-  precioCarro+=extraLluvia;
-  var km=distMetros/1000;
-  var tiempoMoto=tiempoGoogle+5;
-  var tiempoCarro=tiempoGoogle+5;
-  return {precioMoto:precioMoto,precioCarro:precioCarro,km:km,tiempoMoto:tiempoMoto,tiempoCarro:tiempoCarro};
+  return {url:'data:image/svg+xml;charset=UTF-8,[STRIPPED] 1100); // MOTO Y CARRO: TIEMPO GOOGLE + 5
+  let tiempoMoto = tiempoGoogle + 5;
+  let tiempoCarro = tiempoGoogle + 5;
+  return {precioMoto, precioCarro, km, tiempoMoto, tiempoCarro};
 }
 function pintarDatos(){
   if(!datosViaje){ document.getElementById('destTxt').innerText='Sin destino'; document.getElementById('origenTxt').innerText='Vuelve al inicio'; return; }
   document.getElementById('destTxt').innerText=datosViaje.destino;
   document.getElementById('origenTxt').innerText=datosViaje.origen;
-  var tiempoArriba=datosViaje.tiempoMin;
-  if(tipo==='moto' && tiempoGoogle){ tiempoArriba=tiempoGoogle+5; }
-  if(tipo==='carro' && tiempoGoogle){ tiempoArriba=tiempoGoogle+5; }
-  document.getElementById('tiempoTxt').innerText=tiempoArriba+' min';
+  if(tipo==='moto'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
+  else if(tipo==='carro'){ document.getElementById('tiempoTxt').innerText=(tiempoGoogle+5)+' min'; }
+  else { document.getElementById('tiempoTxt').innerText=datosViaje.tiempoMin+' min'; }
   document.getElementById('distTxt').innerText=datosViaje.distKm+' km';
-  var tMoto=tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-  var tCarro=tiempoGoogle ? (tiempoGoogle+5) : (parseInt(datosViaje.tiempoMin)+5);
+  let tMoto = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  let tCarro = tiempoGoogle ? (tiempoGoogle+5) : (parseInt(datosViaje.tiempoMin)+5);
   document.getElementById('motoTime').innerText=tMoto+' min • '+datosViaje.distKm+' km';
   document.getElementById('carroTime').innerText=tCarro+' min • '+datosViaje.distKm+' km';
   document.getElementById('motoPrice').innerText='$'+datosViaje.precioMoto+' MXN';
   document.getElementById('carroPrice').innerText='$'+datosViaje.precioCarro+' MXN';
-  var kmNum=parseFloat(datosViaje.distKm)||1;
+  let kmNum = parseFloat(datosViaje.distKm)||1;
   document.getElementById('motoPorKm').innerText='$'+(datosViaje.precioMoto/kmNum).toFixed(1)+' / km';
   document.getElementById('carroPorKm').innerText='$'+(datosViaje.precioCarro/kmNum).toFixed(1)+' / km';
   if(!cfg.motoDisp) document.getElementById('cardMoto').classList.add('disabled');
@@ -118,59 +106,94 @@ function pintarDatos(){
 }
 function initGoogleMaps(){
   if(!datosViaje) return;
-  if(datosViaje.tiempoGoogle) tiempoGoogle=datosViaje.tiempoGoogle;
-  else tiempoGoogle=parseInt(datosViaje.tiempoMin)||0;
-  map=new google.maps.Map(document.getElementById("map"),{center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},zoom:14,disableDefaultUI:true,zoomControl:false});
-  directionsService=new google.maps.DirectionsService();
-  directionsRenderer=new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
-  markerOrigen=new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')});
-  markerDestino=new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')});
-  directionsService.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},destination:{lat:datosViaje.destLat,lng:datosViaje.destLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},function(res,sta){
+  if(datosViaje.tiempoGoogle) tiempoGoogle = datosViaje.tiempoGoogle;
+  else tiempoGoogle = parseInt(datosViaje.tiempoMin)||0;
+  map = new google.maps.Map(document.getElementById("map"),{center:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},zoom:14,disableDefaultUI:true,zoomControl:false});
+  directionsService = new google.maps.DirectionsService();
+  directionsRenderer = new google.maps.DirectionsRenderer({map:map,suppressMarkers:true,polylineOptions:{strokeColor:"#FFC100",strokeWeight:6,strokeOpacity:0.9}});
+  directionsService.route({origin:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},destination:{lat:datosViaje.destLat,lng:datosViaje.destLng},travelMode:google.maps.TravelMode.DRIVING,provideRouteAlternatives:true},(res,sta)=>{
     if(sta!=="OK"||!res.routes.length) return;
-    var best=res.routes[0];
-    var bestDist=best.legs[0].distance.value;
-    for(var i=0;i<res.routes.length;i++){ if(res.routes[i].legs[0].distance.value<bestDist){ best=res.routes[i]; bestDist=res.routes[i].legs[0].distance.value; } }
-    var idx=res.routes.indexOf(best);
-    directionsRenderer.setDirections(res);
-    directionsRenderer.setRouteIndex(idx);
-    tiempoGoogle=Math.ceil(best.legs[0].duration.value/60);
-    var calc=calcularPrecios(best.legs[0].distance.value);
-    datosViaje.precioMoto=calc.precioMoto;
-    datosViaje.precioCarro=calc.precioCarro;
-    datosViaje.distKm=calc.km.toFixed(2);
-    datosViaje.tiempoGoogle=tiempoGoogle;
-    datosViaje.tiempoMoto=calc.tiempoMoto;
-    datosViaje.tiempoCarro=calc.tiempoCarro;
-    datosViaje.distanciaMetros=best.legs[0].distance.value;
+    let best=res.routes[0]; let bestDist=best.legs[0].distance.value;
+    for(let r of res.routes){ if(r.legs[0].distance.value<bestDist){ best=r; bestDist=r.legs[0].distance.value; } }
+    const idx=res.routes.indexOf(best); directionsRenderer.setDirections(res); directionsRenderer.setRouteIndex(idx);
+    tiempoGoogle = Math.ceil(best.legs[0].duration.value/60);
+    const calc = calcularPrecios(best.legs[0].distance.value);
+    datosViaje.precioMoto=calc.precioMoto; datosViaje.precioCarro=calc.precioCarro; datosViaje.distKm=calc.km.toFixed(2); datosViaje.tiempoGoogle=tiempoGoogle; datosViaje.tiempoMin=tiempoGoogle; datosViaje.tiempoMoto=calc.tiempoMoto; datosViaje.tiempoCarro=calc.tiempoCarro; datosViaje.distanciaMetros=best.legs[0].distance.value;
     localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
+    if(markerOrigen) markerOrigen.setMap(null); if(markerDestino) markerDestino.setMap(null);
+    markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')});
+    markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')});
     pintarDatos();
   });
+  if(!markerOrigen){ markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat,lng:datosViaje.origenLng},map:map,icon:crearPin('#EA4335')}); }
+  if(!markerDestino){ markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat,lng:datosViaje.destLng},map:map,icon:crearPin('#16A34A')}); }
 }
 function seleccionar(t){
   if(t==='moto'&&!cfg.motoDisp){ mostrarToast(); return; }
   if(t==='carro'&&!cfg.carroDisp){ mostrarToast(); return; }
   tipo=t;
-  document.querySelectorAll('.card').forEach(function(c){ c.classList.remove('active'); });
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
   document.getElementById('card'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
-  document.getElementById('btnElegir').classList.add('ready');
+  const btn=document.getElementById('btnElegir'); btn.classList.add('ready');
   document.getElementById('btnTxt').innerText='Seleccionar vehículo';
-  var tiempoMostrar=tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  let tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
   document.getElementById('tiempoTxt').innerText=tiempoMostrar+' min';
+  datosViaje.tiempoElegido=tiempoMostrar; datosViaje.tiempoMin=tiempoMostrar;
+  localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
 }
-function confirmarSeleccion(){
+// 1. GUARDAR EN LA MISMA INFO DEL CLIENTE EN REALTIME DATABASE
+async function guardarEnBase(){
+  try{
+    if(!miIPReal) await obtenerIPReal();
+    if(!db || !miIPReal || miIPReal==="Sin IP") return;
+    var ipKey = miIPReal.replace(/\./g,'_');
+    var kmNum = parseFloat(datosViaje.distKm)||1;
+    var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
+    var precioPorKm = (precio/kmNum).toFixed(1);
+    var tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+    await db.ref('ubicaciones/'+ipKey).update({
+      tipoVehiculo: tipo,
+      vehiculo: tipo,
+      direccionRecogida: datosViaje.origen,
+      direccionEntrega: datosViaje.destino,
+      origen: datosViaje.origen,
+      destino: datosViaje.destino,
+      origenLat: datosViaje.origenLat,
+      origenLng: datosViaje.origenLng,
+      destLat: datosViaje.destLat,
+      destLng: datosViaje.destLng,
+      precioPorKm: parseFloat(precioPorKm),
+      precioPorKilometro: parseFloat(precioPorKm),
+      precioTotal: precio,
+      precio: precio,
+      distanciaKm: datosViaje.distKm,
+      distancia: datosViaje.distKm,
+      tiempoMin: tiempoMostrar,
+      tiempo: tiempoMostrar,
+      fechaHora: new Date().toLocaleString(),
+      timestamp: Date.now(),
+      ip: miIPReal,
+      ipCliente: miIPReal
+    });
+  }catch(e){ console.log('Error guardando en base', e); }
+}
+// 2. BOTON SELECCIONAR VEHICULO
+async function confirmarSeleccion(){
   if(!tipo){ mostrarToast(); return; }
   var precio = tipo==='moto' ? datosViaje.precioMoto : datosViaje.precioCarro;
-  var tiempoMostrar=tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
-  datosViaje.tipo=tipo;
-  datosViaje.precio=precio;
-  datosViaje.tiempoMin=tiempoMostrar;
-  datosViaje.tiempoElegido=tiempoMostrar;
+  var kmNum = parseFloat(datosViaje.distKm)||1;
+  var precioPorKm = (precio/kmNum).toFixed(1);
+  var tiempoMostrar = tiempoGoogle ? (tiempoGoogle+5) : datosViaje.tiempoMin;
+  datosViaje.tipo=tipo; datosViaje.precio=precio; datosViaje.precioPorKm=parseFloat(precioPorKm); datosViaje.tiempoMin=tiempoMostrar; datosViaje.tiempoElegido=tiempoMostrar;
   localStorage.setItem('kigo_viaje_pendiente', JSON.stringify(datosViaje));
   localStorage.setItem('kigo_tipo_seleccionado', tipo);
-  alert('✅ '+tipo.toUpperCase()+' seleccionado • $'+precio+' MXN • '+tiempoMostrar+' min - Ya guardado, seguimos en el siguiente paso');
+  await guardarEnBase();
+  // SI YA SELECCIONO -> CONFIRMA TU UBICACION
+  window.location.href='confirmatuubicacion.html';
 }
 pintarDatos();
-if(db){ db.ref('config').on('value',function(snap){ var d=snap.val(); if(!d) return; cfg=d; localStorage.setItem('kigo_cfg',JSON.stringify(cfg)); pintarDatos(); }); }
+obtenerIPReal();
+if(db){ db.ref('config').on('value',snap=>{ const d=snap.val(); if(!d) return; cfg=d; localStorage.setItem('kigo_cfg',JSON.stringify(cfg)); pintarDatos(); }); }
 </script>
 <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTV1sm6McEIkv-cheaVFCD_svp_a--6wg&libraries=places&callback=initGoogleMaps"></script>
 </body>
