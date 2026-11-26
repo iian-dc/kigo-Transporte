@@ -6,26 +6,26 @@
 <title>Buscando conductor - Kigo xpress</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:system-ui;background:#fff}
-.app{max-width:500px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.app{max-width:500px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;position:relative}
 .top{position:absolute;top:0;left:0;right:0;padding:18px;text-align:center;font-weight:900;font-size:16px}
-.logo{width:130px;height:130px;border-radius:50%;background:#FFC100;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;line-height:1;box-shadow:0 10px 30px rgba(255,193,0,.5);animation:latido 1s ease-in-out infinite}
-@keyframes latido{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.vehiculo-img{width:280px;max-width:90%;height:auto;display:block;animation:flotando 1s ease-in-out infinite;filter:drop-shadow(0 10px 14px rgba(0,0,0,.25))}
+@keyframes flotando{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 .spinner{width:60px;height:60px;border:5px solid #eee;border-top:5px solid #FFC100;border-radius:50%;margin:22px auto 10px;animation:girar 0.8s linear infinite}
 @keyframes girar{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 .resumen{margin-top:16px;background:#f7f7f8;border-radius:16px;padding:14px;width:100%;text-align:left;font-size:13px;line-height:1.6}
-.boton-wsp{margin-top:16px;width:100%;padding:14px;border:none;border-radius:14px;background:#25D366;color:#fff;font-weight:900;font-size:15px;cursor:pointer;display:none}
+.conectando{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;color:#999;margin-top:14px}
+.mini-carga{width:18px;height:18px;border:2px solid #eee;border-top:2px solid #25D366;border-radius:50%;animation:girar 0.7s linear infinite;flex-shrink:0}
 </style>
 </head>
 <body>
 <div class="app">
 <div class="top">Buscando conductor...</div>
-<div class="logo">KIGO<br>XPRESS</div>
+<img id="vehiculoImg" class="vehiculo-img" src="" alt="Vehiculo">
 <div class="spinner"></div>
 <div style="font-weight:900;font-size:18px">Tu viaje ya quedó listo</div>
 <div style="font-size:13px;color:#666;margin-top:4px">Estamos buscando un conductor cerca de ti...</div>
 <div class="resumen" id="resumenTxt">Cargando tu viaje...</div>
-<button id="btnWsp" class="boton-wsp" onclick="irAWhatsApp()">Abrir WhatsApp</button>
-<div style="font-size:11px;color:#999;margin-top:12px">Te estamos conectando con WhatsApp...</div>
+<div class="conectando"><span>Te estamos conectando con WhatsApp</span><span class="mini-carga"></span></div>
 </div>
 <script>
 var datosViaje = null;
@@ -35,6 +35,10 @@ datosViaje = {origen:"Plaza Principal, Dolores Hidalgo", destino:"Parroquia Dolo
 }
 var tipo = localStorage.getItem('kigo_tipo_seleccionado') || datosViaje.tipo || "moto";
 var tipoTexto = (tipo === 'carro' ? 'Carro' : 'Moto');
+var imgMoto = "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTA4L3Jhd3BpeGVsb2ZmaWNlOF9zcG9ydF9tb3RvcmN5Y2xlX2luX3NpZGVfdmlld19fZmxhdF9zdHlsZV9fc2ltcF9jMWU5YjljMi0yYzg3LTQzNWQtYTczZC02MWViNzFhMjU3MDFfMS5wbmc.png";
+var imgCarro = "https://images.bestpng.com/library/vehicles/b4e5fb82-4f44-4c98-8b0d-86f4d395023b.png";
+document.getElementById('vehiculoImg').src = (tipo === 'carro' ? imgCarro : imgMoto);
+document.getElementById('vehiculoImg').alt = tipoTexto;
 var linkRecogida = "https://www.google.com/maps/search/?api=1&query=" + datosViaje.origenLat + "," + datosViaje.origenLng;
 var linkEntrega = "https://www.google.com/maps/search/?api=1&query=" + datosViaje.destLat + "," + datosViaje.destLng;
 var linkRuta = "https://www.google.com/maps/dir/" + datosViaje.origenLat + "," + datosViaje.origenLng + "/" + datosViaje.destLat + "," + datosViaje.destLng;
@@ -42,11 +46,7 @@ document.getElementById('resumenTxt').innerHTML = "<b>Vehiculo:</b> " + tipoText
 var mensaje = "🚖 *KIGO TRANSPORTE* 🚖\n\n*NUEVO SERVICIO*\n\n📍 *¿Dónde se va a recoger?*\n" + datosViaje.origen + "\n" + linkRecogida + "\n\n🏁 *¿Dónde se va a llevar?*\n" + datosViaje.destino + "\n" + linkEntrega + "\n\n🗺️ *Ruta:*\n" + linkRuta + "\n\n🚗 *Vehículo:* " + tipoTexto + "\n📏 *Distancia:* " + datosViaje.distKm + " km\n💰 *Valor del servicio:* $" + datosViaje.precio + " MXN\n\n¿Disponible para tomarlo?";
 var numeroWhatsApp = "524182371999";
 var urlWhatsApp = "https://wa.me/" + numeroWhatsApp + "?text=" + encodeURIComponent(mensaje);
-function irAWhatsApp(){ window.location.href = urlWhatsApp; }
-setTimeout(function(){
-document.getElementById('btnWsp').style.display = 'block';
-irAWhatsApp();
-}, 5000);
+setTimeout(function(){ window.location.href = urlWhatsApp; }, 5000);
 </script>
 </body>
 </html>
