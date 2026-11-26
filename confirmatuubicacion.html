@@ -14,6 +14,9 @@
 .top-bar{position:absolute;top:12px;left:12px;right:12px;z-index:1000;background:#fff;border:1px solid #eee;border-radius:16px;padding:10px 12px;display:flex;gap:10px;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,.1)}
 .btn-back{width:44px;height:44px;min-width:44px;border-radius:50%;background:#FFC100;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .btn-back svg{width:26px;height:26px;display:block}
+.btn-ubicacion{position:absolute;right:12px;bottom:36px;z-index:1000;width:38px;height:38px;border-radius:50%;background:#fff;border:1px solid #eee;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.btn-ubicacion.show{display:flex}
+.btn-ubicacion svg{width:20px;height:20px;display:block}
 .panel{padding:14px 16px 18px 16px;background:#fff;flex:1;display:flex;flex-direction:column;gap:8px}
 .row{display:flex;gap:8px;align-items:flex-start}
 .dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex-shrink:0}
@@ -31,6 +34,7 @@
 <button class="btn-back" onclick="volver()"><svg viewBox="0 0 24 24" fill="none"><path d="M20 12H4M4 12L10 6M4 12L10 18" stroke="#111" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
 <div style="flex:1;min-width:0"><div style="font-weight:900;font-size:13px">Confirma tu ubicacion</div><div style="font-size:11px;color:#666">Mueve el punto donde quieres que te recojan</div></div>
 </div>
+<button id="btnMiUbicacion" class="btn-ubicacion" onclick="volverAMiUbicacion()" title="Volver a mi ubicación"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" fill="#111"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="#111" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="7" stroke="#111" stroke-width="2"/></svg></button>
 </div>
 <div class="panel">
 <div class="row"><div class="dot" style="background:#EA4335"></div><div style="flex:1;min-width:0"><div style="font-size:11px;color:#888">Te recogemos en</div><div id="origenTxt" style="font-weight:700;font-size:13px">Cargando...</div></div></div>
@@ -62,6 +66,7 @@ var markerOrigen = null;
 var directionsService = null;
 var geocoder = null;
 var miIPReal = "";
+var miUbicacionReal = null;
 var db = null;
 try {
 firebase.initializeApp({apiKey:"AIzaSyBDc80M3efkvpMCilAIh4rXDxyva8CcgW8",authDomain:"transporte-ingreso.firebaseapp.com",databaseURL:"https://transporte-ingreso-default-rtdb.firebaseio.com",projectId:"transporte-ingreso",storageBucket:"transporte-ingreso.firebasestorage.app",messagingSenderId:"100785129754",appId:"1:100785129754:web:692f5a9c551d9365fd44a3"});
@@ -76,6 +81,24 @@ document.getElementById('distTxt').innerText = datosViaje.distKm + ' km';
 document.getElementById('tiempoTxt').innerText = (tiempoGoogle + 5) + ' min';
 document.getElementById('precioTxt').innerText = '$' + datosViaje.precio + ' MXN';
 document.getElementById('vehiculoTxt').innerText = 'Vehiculo: ' + (tipo === 'moto' ? 'Moto' : 'Carro') + ' • $' + precioPorKmBase.toFixed(1) + ' / km';
+}
+function actualizarBotonUbicacion(){
+var btn = document.getElementById('btnMiUbicacion');
+if (!btn) return;
+if (!miUbicacionReal) { btn.classList.remove('show'); return; }
+var dLat = datosViaje.origenLat - miUbicacionReal.lat;
+var dLng = datosViaje.origenLng - miUbicacionReal.lng;
+var distMetros = Math.sqrt(dLat*dLat + dLng*dLng) * 111000;
+if (distMetros > 30) { btn.classList.add('show'); } else { btn.classList.remove('show'); }
+}
+function volverAMiUbicacion(){
+if (miUbicacionReal) { actualizarOrigen(miUbicacionReal.lat, miUbicacionReal.lng); return; }
+if (navigator.geolocation) {
+navigator.geolocation.getCurrentPosition(function(pos){
+miUbicacionReal = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+actualizarOrigen(miUbicacionReal.lat, miUbicacionReal.lng);
+}, function(){}, {enableHighAccuracy:true, timeout:8000});
+}
 }
 function recalcular(){
 if (!map || !directionsService) return;
@@ -104,6 +127,7 @@ datosViaje.origenLat = lat;
 datosViaje.origenLng = lng;
 if (markerOrigen) markerOrigen.setPosition({lat:lat, lng:lng});
 if (map) map.panTo({lat:lat, lng:lng});
+actualizarBotonUbicacion();
 if (geocoder) {
 geocoder.geocode({location:{lat:lat, lng:lng}}, function(results, status){
 if (status === "OK" && results[0]) { datosViaje.origen = results[0].formatted_address; }
@@ -121,8 +145,15 @@ directionsService = new google.maps.DirectionsService();
 markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, map:map, draggable:true});
 markerOrigen.addListener("dragend", function(){ var p = markerOrigen.getPosition(); actualizarOrigen(p.lat(), p.lng()); });
 map.addListener("click", function(e){ actualizarOrigen(e.latLng.lat(), e.latLng.lng()); });
+if (navigator.geolocation) {
+navigator.geolocation.getCurrentPosition(function(pos){
+miUbicacionReal = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+actualizarBotonUbicacion();
+}, function(){}, {enableHighAccuracy:true, timeout:8000});
+}
 recalcular();
 pintar();
+actualizarBotonUbicacion();
 }
 function confirmarServicio(){
 try {
