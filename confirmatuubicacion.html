@@ -117,7 +117,7 @@ recalcular();
 } else { pintar(); recalcular(); }
 }
 function initGoogleMaps(){
-map = new google.maps.Map(document.getElementById("map"), {center:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, zoom:18, disableDefaultUI:true, zoomControl:false});
+map = new google.maps.Map(document.getElementById("map"), {center:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, zoom:19, disableDefaultUI:true, zoomControl:false});
 geocoder = new google.maps.Geocoder();
 directionsService = new google.maps.DirectionsService();
 markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, map:map, draggable:true});
