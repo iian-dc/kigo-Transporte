@@ -138,11 +138,32 @@ pintar();
 }
 function mostrarRutaCompleta(){
 if (!map) return;
+if (markerDestino) markerDestino.setMap(map);
 var bounds = new google.maps.LatLngBounds();
 bounds.extend({lat:datosViaje.origenLat, lng:datosViaje.origenLng});
 bounds.extend({lat:datosViaje.destLat, lng:datosViaje.destLng});
-map.fitBounds(bounds, 60);
-if (markerDestino) markerDestino.setMap(map);
+var centro = bounds.getCenter();
+var kmDist = parseFloat(datosViaje.distKm) || 1;
+var zoomDestino = 15;
+if (kmDist > 5) zoomDestino = 14;
+else if (kmDist > 2) zoomDestino = 15;
+else zoomDestino = 16;
+var zoomActual = map.getZoom() || 19;
+map.panTo(centro);
+var pasos = zoomActual - zoomDestino;
+if (pasos <= 0) { map.fitBounds(bounds, 60); return; }
+var i = 0;
+var intervalo = setInterval(function(){
+i++;
+var nuevoZoom = zoomActual - i;
+if (nuevoZoom <= zoomDestino) {
+clearInterval(intervalo);
+map.setZoom(zoomDestino);
+setTimeout(function(){ map.fitBounds(bounds, 60); }, 300);
+} else {
+map.setZoom(nuevoZoom);
+}
+}, 300);
 }
 function actualizarOrigen(lat, lng){
 datosViaje.origenLat = lat;
