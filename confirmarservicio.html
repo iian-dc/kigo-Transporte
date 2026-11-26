@@ -36,8 +36,8 @@ var linkRecogida = "https://www.google.com/maps/search/?api=1&query=" + datosVia
 var linkEntrega = "https://www.google.com/maps/search/?api=1&query=" + datosViaje.destLat + "," + datosViaje.destLng;
 var linkRuta = "https://www.google.com/maps/dir/" + datosViaje.origenLat + "," + datosViaje.origenLng + "/" + datosViaje.destLat + "," + datosViaje.destLng;
 document.getElementById('resumenTxt').innerHTML = "<b>Vehiculo:</b> " + tipoTexto + "<br><b>Recogida:</b> " + datosViaje.origen + "<br><b>Entrega:</b> " + datosViaje.destino + "<br><b>Distancia:</b> " + datosViaje.distKm + " km<br><b>Valor del servicio:</b> $" + datosViaje.precio + " MXN";
-var mensaje = "🚖 *KIGO TRANSPORTE* 🚖\n\n*NUEVO SERVICIO*\n\n📍 *¿Dónde se va a recoger?*\n" + datosViaje.origen + "\n" + linkRecogida + "\n\n🏁 *¿Dónde se va a llevar?*\n" + datosViaje.destino + "\n" + linkEntrega + "\n\n🗺️ *Ruta:*\n" + linkRuta + "\n\n🚗 *Vehículo:* " + tipoTexto + "\n📏 *Distancia:* " + datosViaje.distKm + " km\n💰 *Valor del servicio:* $" + datosViaje.precio + " MXN\n\n¿Disponible para tomarlo?";
-var numeroWhatsApp = "524182371999";
+var mensaje = "🚖 *Kigo Transporte* 🚖\n\n*NUEVO SERVICIO*\n\n📍 *¿Dónde se va a recoger?*\n" + datosViaje.origen + "\n" + linkRecogida + "\n\n🏁 *¿Dónde se va a llevar?*\n" + datosViaje.destino + "\n" + linkEntrega + "\n\n🗺️ *Ruta:*\n" + linkRuta + "\n\n🚗 *Vehículo:* " + tipoTexto + "\n📏 *Distancia:* " + datosViaje.distKm + " km\n💰 *Valor del servicio:* $" + datosViaje.precio + " MXN\n\n¿Disponible para tomarlo?";
+var numeroWhatsApp = "524182371993";
 var urlWhatsApp = "https://wa.me/" + numeroWhatsApp + "?text=" + encodeURIComponent(mensaje);
 setTimeout(function(){ window.location.href = urlWhatsApp; }, 5000);
 </script>
