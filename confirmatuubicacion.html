@@ -61,9 +61,7 @@ var precioPorKmBase = parseFloat(datosViaje.precioPorKm) || 29;
 var tiempoGoogle = parseInt(datosViaje.tiempoGoogle || datosViaje.tiempoMin || 6);
 var map = null;
 var markerOrigen = null;
-var markerDestino = null;
 var directionsService = null;
-var directionsRenderer = null;
 var geocoder = null;
 var miIPReal = "";
 var db = null;
@@ -90,9 +88,6 @@ if (sta !== "OK" || !res.routes.length) return;
 var best = res.routes[0];
 var bestDist = best.legs[0].distance.value;
 for (var i = 0; i < res.routes.length; i++) { if (res.routes[i].legs[0].distance.value < bestDist) { best = res.routes[i]; bestDist = res.routes[i].legs[0].distance.value; } }
-var idx = res.routes.indexOf(best);
-directionsRenderer.setDirections(res);
-directionsRenderer.setRouteIndex(idx);
 tiempoGoogle = Math.ceil(best.legs[0].duration.value / 60);
 var km = best.legs[0].distance.value / 1000;
 var nuevoPrecio = Math.round(km * precioPorKmBase);
@@ -125,8 +120,6 @@ function initGoogleMaps(){
 map = new google.maps.Map(document.getElementById("map"), {center:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, zoom:15, disableDefaultUI:true, zoomControl:false});
 geocoder = new google.maps.Geocoder();
 directionsService = new google.maps.DirectionsService();
-directionsRenderer = new google.maps.DirectionsRenderer({map:map, suppressMarkers:true, polylineOptions:{strokeColor:"#FFC100", strokeWeight:6, strokeOpacity:0.9}});
-markerDestino = new google.maps.Marker({position:{lat:datosViaje.destLat, lng:datosViaje.destLng}, map:map});
 markerOrigen = new google.maps.Marker({position:{lat:datosViaje.origenLat, lng:datosViaje.origenLng}, map:map, draggable:true});
 markerOrigen.addListener("dragend", function(){ var p = markerOrigen.getPosition(); actualizarOrigen(p.lat(), p.lng()); });
 map.addListener("click", function(e){ actualizarOrigen(e.latLng.lat(), e.latLng.lng()); });
